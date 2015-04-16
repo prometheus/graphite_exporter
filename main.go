@@ -18,8 +18,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"math"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"regexp"
@@ -36,7 +36,8 @@ var (
 	listeningAddress = flag.String("web.listen-address", ":9108", "Address on which to expose metrics.")
 	metricsPath      = flag.String("web.telemetry-path", "/metrics", "Path under which to expose Prometheus metrics.")
 	graphiteAddress  = flag.String("graphite.listen-address", ":9109", "TCP and UDP address on which to accept samples.")
-	sampleExpiry     = flag.Duration("graphite.sample-expiry", 5 * time.Minute, "How long a sample is valid for.")
+	mappingConfig    = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
+	sampleExpiry     = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
 	lastProcessed    = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",
@@ -59,6 +60,7 @@ type graphiteSample struct {
 type graphiteCollector struct {
 	samples map[string]*graphiteSample
 	mu      *sync.Mutex
+	mapper  *metricMapper
 	ch      chan *graphiteSample
 }
 
@@ -73,13 +75,13 @@ func newGraphiteCollector() *graphiteCollector {
 }
 
 func (c *graphiteCollector) processReader(reader io.Reader) {
-  lineScanner := bufio.NewScanner(reader)
-  for {
-    if ok := lineScanner.Scan(); !ok {
-      break
-    }
-    c.processLine(lineScanner.Text())
-  }
+	lineScanner := bufio.NewScanner(reader)
+	for {
+		if ok := lineScanner.Scan(); !ok {
+			break
+		}
+		c.processLine(lineScanner.Text())
+	}
 }
 
 func (c *graphiteCollector) processLine(line string) {
@@ -88,7 +90,15 @@ func (c *graphiteCollector) processLine(line string) {
 		glog.Infof("Invalid part count of %d in line: %s", len(parts), line)
 		return
 	}
-	name := invalidMetricChars.ReplaceAllString(parts[0], "_")
+	var name string
+	labels, present := c.mapper.getMapping(parts[0])
+	if present {
+		name = labels["name"]
+		delete(labels, "name")
+	} else {
+		name = invalidMetricChars.ReplaceAllString(parts[0], "_")
+	}
+
 	value, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
 		glog.Infof("Invalid value in line: %s", line)
@@ -103,6 +113,7 @@ func (c *graphiteCollector) processLine(line string) {
 		OriginalName: parts[0],
 		Name:         name,
 		Value:        value,
+		Labels:       labels,
 		Type:         prometheus.GaugeValue,
 		Help:         fmt.Sprintf("Graphite metric %s", name),
 		Timestamp:    time.Unix(int64(timestamp), int64(math.Mod(timestamp, 1.0)*1e9)),
@@ -168,6 +179,14 @@ func main() {
 	c := newGraphiteCollector()
 	prometheus.MustRegister(c)
 
+	c.mapper = &metricMapper{}
+	if *mappingConfig != "" {
+		err := c.mapper.initFromFile(*mappingConfig)
+		if err != nil {
+			glog.Fatalf("Error loading metric mapping config: %s", err)
+		}
+	}
+
 	tcpSock, err := net.Listen("tcp", *graphiteAddress)
 	if err != nil {
 		glog.Fatalf("Error binding to TCP socket: %s", err)
@@ -181,7 +200,7 @@ func main() {
 			}
 			go func() {
 				defer conn.Close()
-        c.processReader(conn)
+				c.processReader(conn)
 			}()
 		}
 	}()
@@ -203,12 +222,12 @@ func main() {
 				glog.Errorf("Error reading UDP packet from %s: %s", srcAddress, err)
 				continue
 			}
-      go c.processReader(bytes.NewReader(buf[0:chars]))
+			go c.processReader(bytes.NewReader(buf[0:chars]))
 		}
 	}()
 
-  http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte(`<html>
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
       <head><title>Graphite Exporter</title></head>
       <body>
       <h1>Graphite Exporter</h1>
@@ -216,6 +235,6 @@ func main() {
       <p><a href="` + *metricsPath + `">Metrics</a></p>
       </body>
       </html>`))
-  })
+	})
 	http.ListenAndServe(*listeningAddress, nil)
 }

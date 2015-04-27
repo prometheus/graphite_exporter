@@ -24,10 +24,10 @@ import (
 )
 
 var (
-	identifierRE = `[a-zA-Z_][a-zA-Z0-9_]+`
-	metricLineRE = regexp.MustCompile(`^(\*\.|` + identifierRE + `\.)+(\*|` + identifierRE + `)$`)
-	labelLineRE  = regexp.MustCompile(`^(` + identifierRE + `)\s*=\s*"(.*)"$`)
-	metricNameRE = regexp.MustCompile(`^` + identifierRE + `$`)
+	metricLineRE      = regexp.MustCompile(`^(\*\.|[^*.]+\.)*(\*|[^*.]+)$`)
+	labelLineRE       = regexp.MustCompile(`^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"(.*)"$`)
+	invalidNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
+	validNameRE       = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9:_]*$`)
 )
 
 type metricMapping struct {
@@ -94,9 +94,6 @@ func (m *metricMapper) initFromString(fileContents string) error {
 				return fmt.Errorf("Line %d: expected label mapping line, got: %s", i, line)
 			}
 			label, value := matches[1], matches[2]
-			if label == "name" && !metricNameRE.MatchString(value) {
-				return fmt.Errorf("Line %d: metric name '%s' doesn't match regex '%s'", i, value, metricNameRE)
-			}
 			currentMapping.labels[label] = value
 		default:
 			panic("illegal state")
@@ -129,8 +126,15 @@ func (m *metricMapper) getMapping(metric string) (labels prometheus.Labels, pres
 
 		labels := prometheus.Labels{}
 		for label, valueExpr := range mapping.labels {
-			value := mapping.regex.ExpandString([]byte{}, valueExpr, metric, matches)
-			labels[label] = string(value)
+			value := string(mapping.regex.ExpandString([]byte{}, valueExpr, metric, matches))
+			if label == "name" {
+				value = invalidNameCharRE.ReplaceAllString(value, "_")
+				if !validNameRE.MatchString(value) {
+					// Begins with a number or colon.
+					value = "_" + value
+				}
+			}
+			labels[label] = value
 		}
 		return labels, true
 	}

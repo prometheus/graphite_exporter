@@ -28,8 +28,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/log"
 )
 
 var (
@@ -87,7 +87,7 @@ func (c *graphiteCollector) processReader(reader io.Reader) {
 func (c *graphiteCollector) processLine(line string) {
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
-		glog.Infof("Invalid part count of %d in line: %s", len(parts), line)
+		log.Infof("Invalid part count of %d in line: %s", len(parts), line)
 		return
 	}
 	var name string
@@ -101,12 +101,12 @@ func (c *graphiteCollector) processLine(line string) {
 
 	value, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
-		glog.Infof("Invalid value in line: %s", line)
+		log.Infof("Invalid value in line: %s", line)
 		return
 	}
 	timestamp, err := strconv.ParseFloat(parts[2], 64)
 	if err != nil {
-		glog.Infof("Invalid timestamp in line: %s", line)
+		log.Infof("Invalid timestamp in line: %s", line)
 		return
 	}
 	sample := graphiteSample{
@@ -183,19 +183,19 @@ func main() {
 	if *mappingConfig != "" {
 		err := c.mapper.initFromFile(*mappingConfig)
 		if err != nil {
-			glog.Fatalf("Error loading metric mapping config: %s", err)
+			log.Fatalf("Error loading metric mapping config: %s", err)
 		}
 	}
 
 	tcpSock, err := net.Listen("tcp", *graphiteAddress)
 	if err != nil {
-		glog.Fatalf("Error binding to TCP socket: %s", err)
+		log.Fatalf("Error binding to TCP socket: %s", err)
 	}
 	go func() {
 		for {
 			conn, err := tcpSock.Accept()
 			if err != nil {
-				glog.Errorf("Error accepting TCP connection: %s", err)
+				log.Errorf("Error accepting TCP connection: %s", err)
 				continue
 			}
 			go func() {
@@ -207,11 +207,11 @@ func main() {
 
 	udpAddress, err := net.ResolveUDPAddr("udp", *graphiteAddress)
 	if err != nil {
-		glog.Fatalf("Error resolving UDP address: %s", err)
+		log.Fatalf("Error resolving UDP address: %s", err)
 	}
 	udpSock, err := net.ListenUDP("udp", udpAddress)
 	if err != nil {
-		glog.Fatalf("Error listening to UDP address: %s", err)
+		log.Fatalf("Error listening to UDP address: %s", err)
 	}
 	go func() {
 		defer udpSock.Close()
@@ -219,7 +219,7 @@ func main() {
 			buf := make([]byte, 65536)
 			chars, srcAddress, err := udpSock.ReadFromUDP(buf)
 			if err != nil {
-				glog.Errorf("Error reading UDP packet from %s: %s", srcAddress, err)
+				log.Errorf("Error reading UDP packet from %s: %s", srcAddress, err)
 				continue
 			}
 			go c.processReader(bytes.NewReader(buf[0:chars]))

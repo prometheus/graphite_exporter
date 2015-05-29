@@ -12,4 +12,4 @@ RUN apk add --update -t build-deps go git mercurial \
     && rm -rf /go && apk del --purge build-deps
 
 EXPOSE     9108 9109
-ENTRYPOINT [ "/bin/graphite_exporter", "-logtostderr" ]
+ENTRYPOINT [ "/bin/graphite_exporter" ]

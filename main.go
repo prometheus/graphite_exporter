@@ -236,5 +236,7 @@ func main() {
       </body>
       </html>`))
 	})
+
+	log.Infof("Starting Server: %s", *listeningAddress)
 	http.ListenAndServe(*listeningAddress, nil)
 }

@@ -3,7 +3,7 @@
 An exporter for metrics exported in the [Graphite plaintext
 protocol](http://graphite.readthedocs.org/en/latest/feeding-carbon.html#the-plaintext-protocol).
 It accepts data over both TCP and UDP, and transforms and exposes them for
-consumption by Prometheus. 
+consumption by Prometheus.
 
 This exporter is useful for exporting metrics from existing Graphite setups, as
 well as for metrics which are not covered by the core Prometheus exporters such
@@ -72,3 +72,17 @@ follows:
 
     test.web-server.foo.bar
      => test_web__server_foo_bar{}
+
+## Using Docker
+
+You can deploy this exporter using the [prom/graphite-exporter](https://registry.hub.docker.com/u/prom/graphite-exporter/) Docker image.
+
+For example:
+
+```bash
+docker pull prom/graphite-exporter
+
+docker run -d -p 9108:9108 -p 9109:9109 -p 9109/udp:9109/udp
+        -v $PWD/graphite_mapping.conf:/tmp/graphite_mapping.conf \
+        prom/graphite-exporter -graphite.mapping-config=/tmp/graphite_mapping.conf
+```

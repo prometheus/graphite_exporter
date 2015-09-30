@@ -42,6 +42,7 @@ type metricMapper struct {
 
 type configLoadStates int
 
+const COMMENT_CHAR = '#'
 const (
 	SEARCHING configLoadStates = iota
 	METRIC_DEFINITION
@@ -58,7 +59,7 @@ func (m *metricMapper) initFromString(fileContents string) error {
 
 		switch state {
 		case SEARCHING:
-			if line == "" {
+			if line == "" || line[0] == COMMENT_CHAR {
 				continue
 			}
 

@@ -188,6 +188,60 @@ func TestMetricMapper(t *testing.T) {
 			`,
 			configBad: true,
 		},
+		// Config with only comments.
+		{
+			config: `
+				# comment
+				# on every line
+			`,
+		},
+		// Config with comment outside definition.
+		{
+			config: `
+				# comment
+				test
+				name="foo"
+			`,
+			mappings: map[string]map[string]string{
+				"test": {
+					"name": "foo",
+				},
+			},
+		},
+		// Config with comment inside definition.
+		{
+			config: `
+				test
+				# comment
+				name="foo"
+				# comment
+				value="bar"
+			`,
+			mappings: map[string]map[string]string{
+				"test": {
+					"name":  "foo",
+					"value": "bar",
+				},
+			},
+		},
+		// Config with comments between definitons.
+		{
+			config: `
+				foo
+				name="bar"
+				# comment
+				bar
+				name="foo"
+			`,
+			mappings: map[string]map[string]string{
+				"foo": {
+					"name": "bar",
+				},
+				"bar": {
+					"name": "foo",
+				},
+			},
+		},
 	}
 
 	mapper := metricMapper{}

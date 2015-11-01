@@ -38,6 +38,7 @@ var (
 	graphiteAddress  = flag.String("graphite.listen-address", ":9109", "TCP and UDP address on which to accept samples.")
 	mappingConfig    = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
 	sampleExpiry     = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
+	strictMatch      = flag.Bool("graphite.mapping-strict-match", false, "Only store metrics that match the mapping configuration.")
 	lastProcessed    = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",
@@ -96,6 +97,10 @@ func (c *graphiteCollector) processLine(line string) {
 		name = labels["name"]
 		delete(labels, "name")
 	} else {
+		// If graphite.mapping-strict-match flag is set, we will drop this metric.
+		if *strictMatch {
+			return
+		}
 		name = invalidMetricChars.ReplaceAllString(parts[0], "_")
 	}
 

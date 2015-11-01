@@ -46,6 +46,11 @@ Metrics that don't match any mapping in the configuration file are translated
 into Prometheus metrics without any labels and with certain characters escaped
 (`_` -> `__`; `-` -> `__`; `.` -> `_`).
 
+If you have a very large set of metrics you may want to skip the ones that don't
+match the mapping configuration. If that is the case you can force this behaviour
+using the `-graphite.mapping-strict-match` flag, and it will only store those metrics
+you really want.
+
 An example mapping configuration:
 
     test.dispatcher.*.*.*

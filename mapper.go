@@ -75,14 +75,14 @@ func (m *metricMapper) initFromString(fileContents string, allowUserRegex bool) 
 			}
 
 			if !userRegex {
-			// Translate the glob-style metric match line into a proper regex that we
-			// can use to match metrics later on.
-			metricRe := strings.Replace(line, ".", "\\.", -1)
-			metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
-			currentMapping.regex = regexp.MustCompile("^" + metricRe + "$")
+				// Translate the glob-style metric match line into a proper regex that we
+				// can use to match metrics later on.
+				metricRe := strings.Replace(line, ".", "\\.", -1)
+				metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
+				currentMapping.regex = regexp.MustCompile("^" + metricRe + "$")
 			} else {
 				currentMapping.regex = regexp.MustCompile(line)
-			}	
+			}
 			state = METRIC_DEFINITION
 
 		case METRIC_DEFINITION:
@@ -123,7 +123,6 @@ func (m *metricMapper) initFromFile(fileName string, userRegex bool) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("userRegex is %s", userRegex)
 	return m.initFromString(string(mappingStr), userRegex)
 }
 

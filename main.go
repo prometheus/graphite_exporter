@@ -39,6 +39,7 @@ var (
 	mappingConfig    = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
 	sampleExpiry     = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
 	strictMatch      = flag.Bool("graphite.mapping-strict-match", false, "Only store metrics that match the mapping configuration.")
+	allowUserRegex   = flag.Bool("graphite.allow-user-regex", false, "Treat metric lines as user-specified regular expressions")
 	lastProcessed    = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",
@@ -186,7 +187,7 @@ func main() {
 
 	c.mapper = &metricMapper{}
 	if *mappingConfig != "" {
-		err := c.mapper.initFromFile(*mappingConfig)
+		err := c.mapper.initFromFile(*mappingConfig, *allowUserRegex)
 		if err != nil {
 			log.Fatalf("Error loading metric mapping config: %s", err)
 		}

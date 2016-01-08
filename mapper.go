@@ -28,6 +28,7 @@ var (
 	labelLineRE       = regexp.MustCompile(`^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"(.*)"$`)
 	invalidNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
 	validNameRE       = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9:_]*$`)
+	userRegex         = false
 )
 
 type metricMapping struct {
@@ -47,7 +48,7 @@ const (
 	METRIC_DEFINITION
 )
 
-func (m *metricMapper) initFromString(fileContents string) error {
+func (m *metricMapper) initFromString(fileContents string, allowUserRegex bool) error {
 	lines := strings.Split(fileContents, "\n")
 	state := SEARCHING
 
@@ -61,16 +62,27 @@ func (m *metricMapper) initFromString(fileContents string) error {
 			if line == "" {
 				continue
 			}
+
 			if !metricLineRE.MatchString(line) {
-				return fmt.Errorf("Line %d: expected metric match line, got: %s", i, line)
+				// if the line doesn't match the expected format and we are not allowing
+				// user-defined regular expressions, throw an error
+				if !allowUserRegex {
+					return fmt.Errorf("Line %d: expected metric match line, got: %s", i, line)
+				} else {
+					// assume we are dealing with a user-defined regular expression
+					userRegex = true
+				}
 			}
 
+			if !userRegex {
 			// Translate the glob-style metric match line into a proper regex that we
 			// can use to match metrics later on.
 			metricRe := strings.Replace(line, ".", "\\.", -1)
 			metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
 			currentMapping.regex = regexp.MustCompile("^" + metricRe + "$")
-
+			} else {
+				currentMapping.regex = regexp.MustCompile(line)
+			}	
 			state = METRIC_DEFINITION
 
 		case METRIC_DEFINITION:
@@ -106,12 +118,13 @@ func (m *metricMapper) initFromString(fileContents string) error {
 	return nil
 }
 
-func (m *metricMapper) initFromFile(fileName string) error {
+func (m *metricMapper) initFromFile(fileName string, userRegex bool) error {
 	mappingStr, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
-	return m.initFromString(string(mappingStr))
+	fmt.Printf("userRegex is %s", userRegex)
+	return m.initFromString(string(mappingStr), userRegex)
 }
 
 func (m *metricMapper) getMapping(metric string) (labels prometheus.Labels, present bool) {

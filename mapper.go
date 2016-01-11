@@ -28,7 +28,6 @@ var (
 	labelLineRE       = regexp.MustCompile(`^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"(.*)"$`)
 	invalidNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
 	validNameRE       = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9:_]*$`)
-	userRegex         = false
 	prefix            = ":userRegExp:"
 )
 

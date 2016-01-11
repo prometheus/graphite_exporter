@@ -66,7 +66,8 @@ func (m *metricMapper) initFromString(fileContents string, allowUserRegex bool) 
 
 			if strings.HasPrefix(line, prefix) {
 				if allowUserRegex {
-					fmt.Println(strings.Trim(line[len(prefix):], " "))
+					// we have a user-defined regular expression, so use it as 
+					// raw regex and hope that it is constructed properly
 					currentMapping.regex = regexp.MustCompile(strings.Trim(line[len(prefix):], " "))
 				}
 			} else if metricLineRE.MatchString(line) {

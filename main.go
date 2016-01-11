@@ -39,7 +39,7 @@ var (
 	mappingConfig    = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
 	sampleExpiry     = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
 	strictMatch      = flag.Bool("graphite.mapping-strict-match", false, "Only store metrics that match the mapping configuration.")
-	allowUserRegex   = flag.Bool("graphite.allow-user-regex", false, "Treat metric lines as user-specified regular expressions")
+	allowUserRegex   = flag.Bool("graphite.allow-user-regex", false, "Allow user-specified regular expressions on lines with :userRegExp: prefix")
 	lastProcessed    = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",

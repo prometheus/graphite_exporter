@@ -1,0 +1,5 @@
+/.build
+/.release
+/.tarballs
+/graphite_exporter
+*.tar.gz

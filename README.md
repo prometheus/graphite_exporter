@@ -1,4 +1,8 @@
-# Graphite Exporter
+# Graphite Exporter [![Build Status](https://travis-ci.org/prometheus/graphite_exporter.svg)][travis]
+
+[![CircleCI](https://circleci.com/gh/prometheus/graphite_exporter/tree/master.svg?style=shield)][circleci]
+[![Docker Repository on Quay](https://quay.io/repository/prometheus/graphite-exporter/status)][quay]
+[![Docker Pulls](https://img.shields.io/docker/pulls/prom/graphite-exporter.svg?maxAge=604800)][hub]
 
 An exporter for metrics exported in the [Graphite plaintext
 protocol](http://graphite.readthedocs.org/en/latest/feeding-carbon.html#the-plaintext-protocol).
@@ -80,7 +84,7 @@ follows:
 
 ## Using Docker
 
-You can deploy this exporter using the [prom/graphite-exporter](https://registry.hub.docker.com/u/prom/graphite-exporter/) Docker image.
+You can deploy this exporter using the [prom/graphite-exporter][hub] Docker image.
 
 For example:
 
@@ -91,3 +95,9 @@ docker run -d -p 9108:9108 -p 9109:9109 -p 9109/udp:9109/udp
         -v $PWD/graphite_mapping.conf:/tmp/graphite_mapping.conf \
         prom/graphite-exporter -graphite.mapping-config=/tmp/graphite_mapping.conf
 ```
+
+
+[circleci]: https://circleci.com/gh/prometheus/graphite_exporter
+[hub]: https://hub.docker.com/r/prom/graphite-exporter/
+[travis]: https://travis-ci.org/prometheus/graphite_exporter
+[quay]: https://quay.io/repository/prometheus/graphite-exporter

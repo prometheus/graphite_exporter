@@ -22,6 +22,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -29,17 +30,19 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/log"
+	"github.com/prometheus/common/log"
+	"github.com/prometheus/common/version"
 )
 
 var (
-	listeningAddress = flag.String("web.listen-address", ":9108", "Address on which to expose metrics.")
-	metricsPath      = flag.String("web.telemetry-path", "/metrics", "Path under which to expose Prometheus metrics.")
-	graphiteAddress  = flag.String("graphite.listen-address", ":9109", "TCP and UDP address on which to accept samples.")
-	mappingConfig    = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
-	sampleExpiry     = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
-	strictMatch      = flag.Bool("graphite.mapping-strict-match", false, "Only store metrics that match the mapping configuration.")
-	lastProcessed    = prometheus.NewGauge(
+	showVersion     = flag.Bool("version", false, "Print version information.")
+	listenAddress   = flag.String("web.listen-address", ":9108", "Address on which to expose metrics.")
+	metricsPath     = flag.String("web.telemetry-path", "/metrics", "Path under which to expose Prometheus metrics.")
+	graphiteAddress = flag.String("graphite.listen-address", ":9109", "TCP and UDP address on which to accept samples.")
+	mappingConfig   = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
+	sampleExpiry    = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
+	strictMatch     = flag.Bool("graphite.mapping-strict-match", false, "Only store metrics that match the mapping configuration.")
+	lastProcessed   = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",
 			Help: "Unix timestamp of the last processed graphite metric.",
@@ -178,8 +181,21 @@ func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- lastProcessed.Desc()
 }
 
+func init() {
+	prometheus.MustRegister(version.NewCollector("graphite_exporter"))
+}
+
 func main() {
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Fprintln(os.Stdout, version.Print("graphite_exporter"))
+		os.Exit(0)
+	}
+
+	log.Infoln("Starting graphite_exporter", version.Info())
+	log.Infoln("Build context", version.BuildContext())
+
 	http.Handle(*metricsPath, prometheus.Handler())
 	c := newGraphiteCollector()
 	prometheus.MustRegister(c)
@@ -242,6 +258,6 @@ func main() {
       </html>`))
 	})
 
-	log.Infof("Starting Server: %s", *listeningAddress)
-	http.ListenAndServe(*listeningAddress, nil)
+	log.Infoln("Listening on", *listenAddress)
+	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }

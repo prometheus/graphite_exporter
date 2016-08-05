@@ -15,6 +15,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"regexp"
 	"strings"
@@ -40,66 +41,21 @@ type metricMapper struct {
 	mutex    sync.RWMutex
 }
 
-type configLoadStates int
-
-const COMMENT_CHAR = '#'
-const (
-	SEARCHING configLoadStates = iota
-	METRIC_DEFINITION
-)
-
 func (m *metricMapper) initFromString(fileContents string) error {
-	lines := strings.Split(fileContents, "\n")
-	state := SEARCHING
-
 	parsedMappings := []metricMapping{}
-	currentMapping := metricMapping{labels: prometheus.Labels{}}
-	for i, line := range lines {
-		line := strings.TrimSpace(line)
+	parser := newParser(fileContents)
 
-		switch state {
-		case SEARCHING:
-			if line == "" || line[0] == COMMENT_CHAR {
-				continue
-			}
-
-			if !metricLineRE.MatchString(line) {
-				return fmt.Errorf("Line %d: expected metric match line, got: %s", i, line)
-			}
-
-			// Translate the glob-style metric match line into a proper regex that we
-			// can use to match metrics later on.
-			metricRe := strings.Replace(line, ".", "\\.", -1)
-			metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
-			currentMapping.regex = regexp.MustCompile("^" + metricRe + "$")
-
-			state = METRIC_DEFINITION
-
-		case METRIC_DEFINITION:
-			if line == "" {
-				if len(currentMapping.labels) == 0 {
-					return fmt.Errorf("Line %d: metric mapping didn't set any labels", i)
-				}
-				if _, ok := currentMapping.labels["name"]; !ok {
-					return fmt.Errorf("Line %d: metric mapping didn't set a metric name", i)
-				}
-
-				parsedMappings = append(parsedMappings, currentMapping)
-
-				state = SEARCHING
-				currentMapping = metricMapping{labels: prometheus.Labels{}}
-				continue
-			}
-
-			matches := labelLineRE.FindStringSubmatch(line)
-			if len(matches) != 3 {
-				return fmt.Errorf("Line %d: expected label mapping line, got: %s", i, line)
-			}
-			label, value := matches[1], matches[2]
-			currentMapping.labels[label] = value
-		default:
-			panic("illegal state")
+	for {
+		var mapping metricMapping
+		err := parser.parseNext(&mapping)
+		if err == io.EOF {
+			break
 		}
+		if err != nil {
+			return err
+		}
+
+		parsedMappings = append(parsedMappings, mapping)
 	}
 
 	m.mutex.Lock()
@@ -142,4 +98,75 @@ func (m *metricMapper) getMapping(metric string) (labels prometheus.Labels, pres
 	}
 
 	return nil, false
+}
+
+type metricParser struct {
+	lines []string
+	index int
+}
+
+func newParser(fileContents string) *metricParser {
+	return &metricParser{lines: strings.Split(fileContents, "\n")}
+}
+
+func isMetricLine(line string) bool {
+	return isParsableLine(line) && metricLineRE.MatchString(line)
+}
+
+func isLabelLine(line string) bool {
+	return isParsableLine(line) && labelLineRE.MatchString(line)
+}
+
+func isParsableLine(line string) bool {
+	return line != "" && !strings.HasPrefix(line, "#")
+}
+
+func (r *metricParser) parseNext(mapping *metricMapping) error {
+	searching := true
+	var metricLine int
+
+	for ; r.index < len(r.lines); r.index++ {
+		lineText := strings.TrimSpace(r.lines[r.index])
+		currentLine := r.index + 1
+
+		if isLabelLine(lineText) {
+			if searching {
+				return fmt.Errorf("Line %d: expected metric match line, got: %s", currentLine, lineText)
+			}
+
+			matches := labelLineRE.FindStringSubmatch(lineText)
+			if len(matches) != 3 {
+				return fmt.Errorf("Line %d: expected label mapping line, got: %s", currentLine, lineText)
+			}
+
+			label, value := matches[1], matches[2]
+			mapping.labels[label] = value
+		} else if isMetricLine(lineText) {
+			if !searching {
+				break
+			}
+
+			searching = false
+			metricLine = currentLine
+
+			metricRe := strings.Replace(lineText, ".", "\\.", -1)
+			metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
+			mapping.regex = regexp.MustCompile("^" + metricRe + "$")
+			mapping.labels = prometheus.Labels{}
+		}
+	}
+
+	if !searching {
+		if len(mapping.labels) == 0 {
+			return fmt.Errorf("Line %d: metric mapping didn't set any labels", metricLine)
+		}
+
+		if _, ok := mapping.labels["name"]; !ok {
+			return fmt.Errorf("Line %d: metric mapping didn't set a metric name", metricLine)
+		}
+
+		return nil
+	}
+
+	return io.EOF
 }

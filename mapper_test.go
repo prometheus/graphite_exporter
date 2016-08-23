@@ -72,6 +72,66 @@ func TestMetricMapper(t *testing.T) {
 				},
 			},
 		},
+		// Config with name sanitized without specified group.
+		{
+			config: `
+				.*.*.test.*
+				name="no_group"
+				first="$1"
+				second="$2"
+				third="$3"
+				job="$1-$2-$3"
+			`,
+			mappings: map[string]map[string]string{
+				".1.2.test.3": {
+					"name":   "no_group",
+					"first":  "1",
+					"second": "2",
+					"third":  "3",
+					"job":    "1-2-3",
+				},
+			},
+		},
+		// Config with name sanitized without specified group and type.
+		{
+			config: `
+				..*.*.test.*
+				name="no_group_and_type"
+				first="$1"
+				second="$2"
+				third="$3"
+				job="$1-$2-$3"
+			`,
+			mappings: map[string]map[string]string{
+				"..1.2.test.3": {
+					"name":   "no_group_and_type",
+					"first":  "1",
+					"second": "2",
+					"third":  "3",
+					"job":    "1-2-3",
+				},
+			},
+		},
+		// Config with empty components.
+		{
+			config: `
+				.*.*..test..*
+				name="empty_components"
+				first="$1"
+				second="$2"
+				third="$3"
+				job="$1-$2-$3"
+			`,
+			mappings: map[string]map[string]string{
+				".1.2..test..3": {
+					"name":   "empty_components",
+					"first":  "1",
+					"second": "2",
+					"third":  "3",
+					"job":    "1-2-3",
+				},
+			},
+		},
 		// Config with single component.
 		{
 			config: `

@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	metricLineRE      = regexp.MustCompile(`^(\*\.|[^*.]+\.)*(\*|[^*.]+)$`)
+	metricLineRE      = regexp.MustCompile(`^(\*\.|[^*.]+\.|\.)*(\*|[^*.]+)$`)
 	labelLineRE       = regexp.MustCompile(`^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"(.*)"$`)
 	invalidNameCharRE = regexp.MustCompile(`[^a-zA-Z0-9:_]`)
 	validNameRE       = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9:_]*$`)
@@ -61,6 +61,7 @@ func (m *metricMapper) initFromString(fileContents string) error {
 			if line == "" {
 				continue
 			}
+
 			if !metricLineRE.MatchString(line) {
 				return fmt.Errorf("Line %d: expected metric match line, got: %s", i, line)
 			}

@@ -47,8 +47,7 @@ starting at 1. Multiple matching definitions are separated by one or more empty
 lines. The first mapping rule that matches a graohite metric wins.
 
 Metrics that don't match any mapping in the configuration file are translated
-into Prometheus metrics without any labels and with certain characters escaped
-(`_` -> `__`; `-` -> `__`; `.` -> `_`).
+into Prometheus metrics without any labels and with `.` characters replaced with `_`.
 
 If you have a very large set of metrics you may want to skip the ones that don't
 match the mapping configuration. If that is the case you can force this behaviour

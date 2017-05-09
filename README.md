@@ -44,7 +44,7 @@ each, and at least define the metric name (label name `name`). The Prometheus
 metric is then constructed from these labels. `$n`-style references in the
 label value are replaced by the n-th wildcard match in the matching line,
 starting at 1. Multiple matching definitions are separated by one or more empty
-lines. The first mapping rule that matches a graohite metric wins.
+lines. The first mapping rule that matches a graphite metric wins.
 
 Metrics that don't match any mapping in the configuration file are translated
 into Prometheus metrics without any labels and with certain characters escaped

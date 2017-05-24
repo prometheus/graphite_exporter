@@ -62,15 +62,24 @@ func (m *metricMapper) initFromString(fileContents string) error {
 				continue
 			}
 
-			if !metricLineRE.MatchString(line) {
-				return fmt.Errorf("Line %d: expected metric match line, got: %s", i, line)
-			}
+			if strings.HasPrefix(line, "~") {
+				metricRe := strings.TrimPrefix(line, "~")
+				var err error
+				currentMapping.regex, err = regexp.Compile(metricRe)
+				if err != nil {
+					return fmt.Errorf("Line %d: error compiling regex %s: %s", i, metricRe, err)
+				}
+			} else {
+				if !metricLineRE.MatchString(line) {
+					return fmt.Errorf("Line %d: expected metric match line, got: %s", i, line)
+				}
 
-			// Translate the glob-style metric match line into a proper regex that we
-			// can use to match metrics later on.
-			metricRe := strings.Replace(line, ".", "\\.", -1)
-			metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
-			currentMapping.regex = regexp.MustCompile("^" + metricRe + "$")
+				// Translate the glob-style metric match line into a proper regex that we
+				// can use to match metrics later on.
+				metricRe := strings.Replace(line, ".", "\\.", -1)
+				metricRe = strings.Replace(metricRe, "*", "([^.]+)", -1)
+				currentMapping.regex = regexp.MustCompile("^" + metricRe + "$")
+			}
 
 			state = METRIC_DEFINITION
 

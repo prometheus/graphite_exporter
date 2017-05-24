@@ -188,6 +188,56 @@ func TestMetricMapper(t *testing.T) {
 			`,
 			configBad: true,
 		},
+		// Config with full regex.
+		{
+			config: `
+				~^test\.dispatcher\.(.*)\.(.*)\.(.*)$
+				name="dispatch_events"
+				processor="$1"
+				action="$2"
+				result="$3"
+				job="test_dispatcher"
+	        `,
+			mappings: map[string]map[string]string{
+				"test.dispatcher.FooProcessor.send.succeeded": {
+					"name":      "dispatch_events",
+					"processor": "FooProcessor",
+					"action":    "send",
+					"result":    "succeeded",
+					"job":       "test_dispatcher",
+				},
+				"foo.bar.baz": {},
+			},
+		},
+		// Config with full regex with bad regex
+		{
+			config: `
+				~^test\.dispatcher\.(.*)\.(*)\.(.*)$
+				name="dispatch_events"
+				processor="$1"
+				action="$2"
+				result="$3"
+				job="test_dispatcher"
+	        `,
+			configBad: true,
+		},
+		// Config with full regex and partial match.
+		{
+			config: `
+				~^test\.dispatcher\.event-(.*?)\..*$
+				name="dispatch_events"
+				event="$1"
+				job="test_dispatcher"
+	        `,
+			mappings: map[string]map[string]string{
+				"test.dispatcher.event-FooProcessor.send.succeeded": {
+					"name":  "dispatch_events",
+					"event": "FooProcessor",
+					"job":   "test_dispatcher",
+				},
+				"foo.bar.baz": {},
+			},
+		},
 	}
 
 	mapper := metricMapper{}

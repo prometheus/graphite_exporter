@@ -96,6 +96,7 @@ func (m *metricMapper) initFromString(fileContents string) error {
 			}
 			label, value := matches[1], matches[2]
 			currentMapping.labels[label] = value
+			parsedMappings = append(parsedMappings, currentMapping)
 		default:
 			panic("illegal state")
 		}

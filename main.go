@@ -16,13 +16,11 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
 	"math"
 	"net"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,16 +30,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
-	showVersion     = flag.Bool("version", false, "Print version information.")
-	listenAddress   = flag.String("web.listen-address", ":9108", "Address on which to expose metrics.")
-	metricsPath     = flag.String("web.telemetry-path", "/metrics", "Path under which to expose Prometheus metrics.")
-	graphiteAddress = flag.String("graphite.listen-address", ":9109", "TCP and UDP address on which to accept samples.")
-	mappingConfig   = flag.String("graphite.mapping-config", "", "Metric mapping configuration file name.")
-	sampleExpiry    = flag.Duration("graphite.sample-expiry", 5*time.Minute, "How long a sample is valid for.")
-	strictMatch     = flag.Bool("graphite.mapping-strict-match", false, "Only store metrics that match the mapping configuration.")
+	listenAddress   = kingpin.Flag("web.listen-address", "Address on which to expose metrics.").Default(":9108").String()
+	metricsPath     = kingpin.Flag("web.telemetry-path", "Path under which to expose Prometheus metrics.").Default("/metrics").String()
+	graphiteAddress = kingpin.Flag("graphite.listen-address", "TCP and UDP address on which to accept samples.").Default(":9109").String()
+	mappingConfig   = kingpin.Flag("graphite.mapping-config", "Metric mapping configuration file name.").Default("").String()
+	sampleExpiry    = kingpin.Flag("graphite.sample-expiry", "How long a sample is valid for.").Default("5m").Duration()
+	strictMatch     = kingpin.Flag("graphite.mapping-strict-match", "Only store metrics that match the mapping configuration.").Bool()
 	lastProcessed   = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",
@@ -186,12 +184,10 @@ func init() {
 }
 
 func main() {
-	flag.Parse()
-
-	if *showVersion {
-		fmt.Fprintln(os.Stdout, version.Print("graphite_exporter"))
-		os.Exit(0)
-	}
+	log.AddFlags(kingpin.CommandLine)
+	kingpin.Version(version.Print("graphite_exporter"))
+	kingpin.HelpFlag.Short('h')
+	kingpin.Parse()
 
 	log.Infoln("Starting graphite_exporter", version.Info())
 	log.Infoln("Build context", version.BuildContext())

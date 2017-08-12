@@ -30,7 +30,7 @@ echo "test_udp 1234 $(date +%s)" | nc -u -w1 localhost 9109
 Metrics will be available on [http://localhost:9108/metrics](http://localhost:9108/metric).
 
 To avoid using unbounded memory, metrics will be garbage collected five minutes after
-they are last pushed to. This is configurable with the `-graphite.sample-expiry` flag.
+they are last pushed to. This is configurable with the `--graphite.sample-expiry` flag.
 
 ## Metric Mapping and Configuration
 
@@ -93,7 +93,7 @@ docker pull prom/graphite-exporter
 
 docker run -d -p 9108:9108 -p 9109:9109 -p 9109/udp:9109/udp
         -v $PWD/graphite_mapping.conf:/tmp/graphite_mapping.conf \
-        prom/graphite-exporter -graphite.mapping-config=/tmp/graphite_mapping.conf
+        prom/graphite-exporter --graphite.mapping-config=/tmp/graphite_mapping.conf
 ```
 
 

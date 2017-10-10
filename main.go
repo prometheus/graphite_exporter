@@ -21,6 +21,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,6 +33,7 @@ import (
 	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
+
 
 var (
 	listenAddress   = kingpin.Flag("web.listen-address", "Address on which to expose metrics.").Default(":9108").String()

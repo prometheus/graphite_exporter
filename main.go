@@ -21,6 +21,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	_ "net/http/pprof"
 	"regexp"
 	"strconv"
 	"strings"

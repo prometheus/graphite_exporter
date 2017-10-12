@@ -34,7 +34,6 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-
 var (
 	listenAddress   = kingpin.Flag("web.listen-address", "Address on which to expose metrics.").Default(":9108").String()
 	metricsPath     = kingpin.Flag("web.telemetry-path", "Path under which to expose Prometheus metrics.").Default("/metrics").String()

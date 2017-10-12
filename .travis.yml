@@ -1,11 +1,11 @@
 sudo: false
 
 language: go
-
-go_import_path: github.com/prometheus/graphite_exporter
-
 go:
  - 1.9.x
+ - master
+
+go_import_path: github.com/prometheus/graphite_exporter
 
 script:
  - make

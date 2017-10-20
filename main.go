@@ -49,7 +49,7 @@ var (
 	)
 	sampleExpiryMetric = prometheus.NewGauge(
 		prometheus.GaugeOpts{
-			Name: "graphite_exporter_sample_expiry_duration_seconds",
+			Name: "graphite_sample_expiry_seconds",
 			Help: "How long in seconds a metric sample is valid for.",
 		},
 	)
@@ -205,7 +205,6 @@ func main() {
 	http.Handle(*metricsPath, prometheus.Handler())
 	c := newGraphiteCollector()
 	prometheus.MustRegister(c)
-
 
 	c.mapper = &metricMapper{}
 	if *mappingConfig != "" {

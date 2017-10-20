@@ -47,6 +47,12 @@ var (
 			Help: "Unix timestamp of the last processed graphite metric.",
 		},
 	)
+	sampleExpiryMetric = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "graphite_sample_expiry_seconds",
+			Help: "How long in seconds a metric sample is valid for.",
+		},
+	)
 	invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 )
 
@@ -189,6 +195,9 @@ func main() {
 	kingpin.Version(version.Print("graphite_exporter"))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
+
+	prometheus.MustRegister(sampleExpiryMetric)
+	sampleExpiryMetric.Set(sampleExpiry.Seconds())
 
 	log.Infoln("Starting graphite_exporter", version.Info())
 	log.Infoln("Build context", version.BuildContext())

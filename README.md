@@ -70,17 +70,25 @@ An example mapping configuration:
     outcome="$3"
     job="${1}_server"
 
+    diskshelf-*.disk-*.disk_octets.read
+	name="diskshelf_read"
+	shelf="$1"
+	disk="$2"
+
 This would transform these example graphite metrics into Prometheus metrics as
 follows:
 
     test.dispatcher.FooProcessor.send.success
      => dispatcher_events_total{processor="FooProcessor", action="send", outcome="success", job="test_dispatcher"}
-
-    foo_product.signup.facebook.failure
+    
+	foo_product.signup.facebook.failure
      => signup_events_total{provider="facebook", outcome="failure", job="foo_product_server"}
 
     test.web-server.foo.bar
      => test_web__server_foo_bar{}
+
+    diskshelf-02.disk-sda.disk_octets.read
+     => diskshelf_read{shelf="02", disk="sda"}
 
 ## Using Docker
 

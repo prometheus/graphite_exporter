@@ -11,7 +11,7 @@ jobs:
     steps:
     - checkout
     - run: make promu
-    - run: make check_license style unused staticcheck build
+    - run: make style test vet build
     - run: rm -v graphite_exporter
 
   build:

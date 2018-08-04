@@ -6,7 +6,7 @@ jobs:
     docker:
     - image: circleci/golang:1.9
     working_directory: /go/src/github.com/prometheus/graphite_exporter
-    resource_class: large
+    resource_class: small
 
     steps:
     - checkout

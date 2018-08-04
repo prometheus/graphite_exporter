@@ -34,6 +34,12 @@ func TestMetricMapper(t *testing.T) {
 				action="$2"
 				result="$3"
 				job="test_dispatcher"
+				
+				array-*.disk-*.read
+				name="storage_array_read"
+				array="$1"
+				disk="$2"
+				job="storage"
 
 				*.*
 				name="catchall"
@@ -49,6 +55,12 @@ func TestMetricMapper(t *testing.T) {
 					"action":    "send",
 					"result":    "succeeded",
 					"job":       "test_dispatcher",
+				},
+				"array-02.disk-sda1.read": {
+					"name":      "storage_array_read",
+					"array":     "02",
+					"disk":      "sda1",
+					"job":       "storage",
 				},
 				"foo.bar": {
 					"name":   "catchall",
@@ -171,14 +183,6 @@ func TestMetricMapper(t *testing.T) {
 					"label": "a_foo",
 				},
 			},
-		},
-		// Config with bad metric line.
-		{
-			config: `
-				bad-metric-line*.*.*
-				name="foo"
-			`,
-			configBad: true,
 		},
 		// Config with bad label line.
 		{

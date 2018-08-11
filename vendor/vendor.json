@@ -87,6 +87,12 @@
 			"revisionTime": "2016-04-11T19:08:41Z"
 		},
 		{
+			"checksumSHA1": "lgoYB1meIxDlk0njGNSrCa21hSM=",
+			"path": "github.com/prometheus/statsd_exporter/pkg/mapper",
+			"revision": "84f1ef33d44246059074bc5bc525f6f2162c4fb0",
+			"revisionTime": "2018-08-15T06:13:32Z"
+		},
+		{
 			"checksumSHA1": "SdEcxwaW92m0H3pao3BPj2ZpvaU=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "446d1c146faa8ed3f4218f056fcd165f6bcfda81",
@@ -105,5 +111,5 @@
 			"revisionTime": "2017-07-27T04:22:29Z"
 		}
 	],
-	"rootPath": "github.com/prometheus/graphite_exporter"
+	"rootPath": "github.com/travisgroth/graphite_exporter"
 }

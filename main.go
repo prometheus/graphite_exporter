@@ -31,6 +31,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
+	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -69,7 +70,7 @@ type graphiteSample struct {
 type graphiteCollector struct {
 	samples map[string]*graphiteSample
 	mu      *sync.Mutex
-	mapper  *metricMapper
+	mapper  *mapper.MetricMapper
 	ch      chan *graphiteSample
 }
 
@@ -100,9 +101,13 @@ func (c *graphiteCollector) processLine(line string) {
 		return
 	}
 	var name string
-	labels, present := c.mapper.getMapping(parts[0])
+	mapping, labels, present := c.mapper.GetMapping(parts[0], "graphite")
 	if present {
-		name = labels["name"]
+		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
+		if mapping.Action == mapper.ActionTypeDrop {
+			return
+		}
+		name = mapping.Name
 		delete(labels, "name")
 	} else {
 		// If graphite.mapping-strict-match flag is set, we will drop this metric.
@@ -206,9 +211,9 @@ func main() {
 	c := newGraphiteCollector()
 	prometheus.MustRegister(c)
 
-	c.mapper = &metricMapper{}
+	c.mapper = &mapper.MetricMapper{}
 	if *mappingConfig != "" {
-		err := c.mapper.initFromFile(*mappingConfig)
+		err := c.mapper.InitFromFile(*mappingConfig)
 		if err != nil {
 			log.Fatalf("Error loading metric mapping config: %s", err)
 		}

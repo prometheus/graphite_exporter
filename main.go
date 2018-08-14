@@ -94,6 +94,7 @@ func (c *graphiteCollector) processReader(reader io.Reader) {
 }
 
 func (c *graphiteCollector) processLine(line string) {
+	line = strings.TrimSpace(line)
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
 		log.Infof("Invalid part count of %d in line: %s", len(parts), line)

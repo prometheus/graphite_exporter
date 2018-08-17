@@ -67,18 +67,25 @@ type graphiteSample struct {
 	Timestamp    time.Time
 }
 
+type metricMapper interface {
+	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
+	InitFromFile(string) error
+}
+
 type graphiteCollector struct {
-	samples map[string]*graphiteSample
-	mu      *sync.Mutex
-	mapper  *mapper.MetricMapper
-	ch      chan *graphiteSample
+	samples     map[string]*graphiteSample
+	mu          *sync.Mutex
+	mapper      metricMapper
+	ch          chan *graphiteSample
+	strictMatch bool
 }
 
 func newGraphiteCollector() *graphiteCollector {
 	c := &graphiteCollector{
-		ch:      make(chan *graphiteSample, 0),
-		mu:      &sync.Mutex{},
-		samples: map[string]*graphiteSample{},
+		ch:          make(chan *graphiteSample, 0),
+		mu:          &sync.Mutex{},
+		samples:     map[string]*graphiteSample{},
+		strictMatch: *strictMatch,
 	}
 	go c.processSamples()
 	return c
@@ -100,21 +107,19 @@ func (c *graphiteCollector) processLine(line string) {
 		log.Infof("Invalid part count of %d in line: %s", len(parts), line)
 		return
 	}
+	originalName := parts[0]
 	var name string
-	mapping, labels, present := c.mapper.GetMapping(parts[0], "graphite")
+	mapping, labels, present := c.mapper.GetMapping(originalName, "graphite")
+
+	if (present && mapping.Action == mapper.ActionTypeDrop) || (!present && c.strictMatch) {
+		return
+	}
+
+	delete(labels, "name")
 	if present {
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
-		if mapping.Action == mapper.ActionTypeDrop {
-			return
-		}
-		name = mapping.Name
-		delete(labels, "name")
 	} else {
-		// If graphite.mapping-strict-match flag is set, we will drop this metric.
-		if *strictMatch {
-			return
-		}
-		name = invalidMetricChars.ReplaceAllString(parts[0], "_")
+		name = invalidMetricChars.ReplaceAllString(originalName, "_")
 	}
 
 	value, err := strconv.ParseFloat(parts[1], 64)
@@ -128,12 +133,12 @@ func (c *graphiteCollector) processLine(line string) {
 		return
 	}
 	sample := graphiteSample{
-		OriginalName: parts[0],
+		OriginalName: originalName,
 		Name:         name,
 		Value:        value,
 		Labels:       labels,
 		Type:         prometheus.GaugeValue,
-		Help:         fmt.Sprintf("Graphite metric %s", parts[0]),
+		Help:         fmt.Sprintf("Graphite metric %s", originalName),
 		Timestamp:    time.Unix(int64(timestamp), int64(math.Mod(timestamp, 1.0)*1e9)),
 	}
 	lastProcessed.Set(float64(time.Now().UnixNano()) / 1e9)
@@ -142,9 +147,13 @@ func (c *graphiteCollector) processLine(line string) {
 
 func (c *graphiteCollector) processSamples() {
 	ticker := time.NewTicker(time.Minute).C
+
 	for {
 		select {
-		case sample := <-c.ch:
+		case sample, ok := <-c.ch:
+			if sample == nil || ok != true {
+				return
+			}
 			c.mu.Lock()
 			c.samples[sample.OriginalName] = sample
 			c.mu.Unlock()

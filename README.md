@@ -34,17 +34,11 @@ they are last pushed to. This is configurable with the `--graphite.sample-expiry
 
 ## Metric Mapping and Configuration
 
+**Please note there has been a breaking change in configuration after version 0.2.0.  The YAML style config from [statsd_exporter](https://github.com/prometheus/statsd_exporter) is now used.  See conversion instructions below**
+
+### YAML Config
 The graphite_exporter can be configured to translate specific dot-separated
-graphite metrics into labeled Prometheus metrics via a simple mapping language.
-This is read from a file specified by the `-graphite.mapping-config` flag. A
-mapping definition starts with a line matching the graphite metric in question,
-with `*`s acting as wildcards for each dot-separated metric component. The
-lines following the matching expression must contain one `label="value"` pair
-each, and at least define the metric name (label name `name`). The Prometheus
-metric is then constructed from these labels. `$n`-style references in the
-label value are replaced by the n-th wildcard match in the matching line,
-starting at 1. Multiple matching definitions are separated by one or more empty
-lines. The first mapping rule that matches a graphite metric wins.
+graphite metrics into labeled Prometheus metrics via YAML configuration file.  This file shares syntax and logic with [statsd_exporter](https://github.com/prometheus/statsd_exporter).  Please follow the statsd_exporter documentation for usage information.  However, graphite_exporter does not support *all* parsing features at this time.  Any feature based on the 'timer_type' option will not function.  Otherwise, regex matching, groups, match/drop behavior, should work as expected.
 
 Metrics that don't match any mapping in the configuration file are translated
 into Prometheus metrics without any labels and with names in which every 
@@ -57,18 +51,22 @@ you really want.
 
 An example mapping configuration:
 
-    test.dispatcher.*.*.*
-    name="dispatcher_events_total"
-    processor="$1"
-    action="$2"
-    outcome="$3"
-    job="test_dispatcher"
-
-    *.signup.*.*
-    name="signup_events_total"
-    provider="$2"
-    outcome="$3"
-    job="${1}_server"
+```
+mappings:
+- match: test.dispatcher.*.*.*
+  name: dispatcher_events_total
+  labels:
+    action: $2
+    job: test_dispatcher
+    outcome: $3
+    processor: $1
+- match: '*.signup.*.*'
+  name: signup_events_total
+  labels:
+    job: ${1}_server
+    outcome: $3
+    provider: $2
+```
 
 This would transform these example graphite metrics into Prometheus metrics as
 follows:
@@ -81,6 +79,44 @@ follows:
 
     test.web-server.foo.bar
      => test_web__server_foo_bar{}
+
+### Conversion from legacy configuration
+
+If you have an existing config file using the legacy mapping syntax, you may use [statsd-exporter-convert](https://github.com/bakins/statsd-exporter-convert) to update to the new YAML based syntax.  Here we convert the old example synatx:
+
+```
+$ go get -u github.com/bakins/statsd-exporter-convert
+
+$ cat example.conf
+test.dispatcher.*.*.*
+name="dispatcher_events_total"
+processor="$1"
+action="$2"
+outcome="$3"
+job="test_dispatcher"
+
+*.signup.*.*
+name="signup_events_total"
+provider="$2"
+outcome="$3"
+job="${1}_server"
+
+$ statsd-exporter-convert example.conf
+mappings:
+- match: test.dispatcher.*.*.*
+  name: dispatcher_events_total
+  labels:
+    action: $2
+    job: test_dispatcher
+    outcome: $3
+    processor: $1
+- match: '*.signup.*.*'
+  name: signup_events_total
+  labels:
+    job: ${1}_server
+    outcome: $3
+    provider: $2
+````
 
 ## Using Docker
 

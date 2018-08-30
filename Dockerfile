@@ -1,5 +1,5 @@
-FROM        quay.io/prometheus/busybox:latest
-MAINTAINER  The Prometheus Authors <prometheus-developers@googlegroups.com>
+FROM  quay.io/prometheus/busybox:latest
+LABEL maintainer="The Prometheus Authors <prometheus-developers@googlegroups.com>"
 
 COPY graphite_exporter /bin/graphite_exporter
 

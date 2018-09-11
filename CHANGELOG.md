@@ -1,3 +1,7 @@
+# unreleased
+
+* [ENHANCEMENT] Log incoming and parsed samples if debug logging is enabled ([#58](https://github.com/prometheus/graphite_exporter/pull/58))
+
 # 0.3.0 / 2018-08-22
 
 This release contains two major breaking changes:

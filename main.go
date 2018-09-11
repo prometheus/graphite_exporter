@@ -103,6 +103,7 @@ func (c *graphiteCollector) processReader(reader io.Reader) {
 
 func (c *graphiteCollector) processLine(line string) {
 	line = strings.TrimSpace(line)
+	log.Debugf("Incoming line : %s", line)
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
 		log.Infof("Invalid part count of %d in line: %s", len(parts), line)
@@ -142,6 +143,7 @@ func (c *graphiteCollector) processLine(line string) {
 		Help:         fmt.Sprintf("Graphite metric %s", originalName),
 		Timestamp:    time.Unix(int64(timestamp), int64(math.Mod(timestamp, 1.0)*1e9)),
 	}
+	log.Debugf("Sample: %+v", sample)
 	lastProcessed.Set(float64(time.Now().UnixNano()) / 1e9)
 	c.ch <- &sample
 }

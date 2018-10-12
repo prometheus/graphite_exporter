@@ -99,10 +99,16 @@
 			"revisionTime": "2016-04-11T19:08:41Z"
 		},
 		{
-			"checksumSHA1": "lgoYB1meIxDlk0njGNSrCa21hSM=",
+			"checksumSHA1": "GVUMEUJviRe1AiRUD7ogSeyBHVE=",
 			"path": "github.com/prometheus/statsd_exporter/pkg/mapper",
-			"revision": "84f1ef33d44246059074bc5bc525f6f2162c4fb0",
-			"revisionTime": "2018-08-15T06:13:32Z"
+			"revision": "555cd98958677f21872c9732e9edbf77b5ee1d12",
+			"revisionTime": "2018-10-12T08:30:24Z"
+		},
+		{
+			"checksumSHA1": "1IA9JWV5tAQeuH51p7ZDHC95rfI=",
+			"path": "github.com/prometheus/statsd_exporter/pkg/mapper/fsm",
+			"revision": "555cd98958677f21872c9732e9edbf77b5ee1d12",
+			"revisionTime": "2018-10-12T08:30:24Z"
 		},
 		{
 			"checksumSHA1": "SdEcxwaW92m0H3pao3BPj2ZpvaU=",

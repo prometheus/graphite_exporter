@@ -127,8 +127,8 @@ For example:
 ```bash
 docker pull prom/graphite-exporter
 
-docker run -d -p 9108:9108 -p 9109:9109 -p 9109/udp:9109/udp
-        -v $PWD/graphite_mapping.conf:/tmp/graphite_mapping.conf \
+docker run -d -p 9108:9108 -p 9109:9109 -p 9109:9109/udp \
+        -v ${PWD}/graphite_mapping.conf:/tmp/graphite_mapping.conf \
         prom/graphite-exporter --graphite.mapping-config=/tmp/graphite_mapping.conf
 ```
 

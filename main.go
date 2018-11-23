@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -42,7 +43,9 @@ var (
 	mappingConfig   = kingpin.Flag("graphite.mapping-config", "Metric mapping configuration file name.").Default("").String()
 	sampleExpiry    = kingpin.Flag("graphite.sample-expiry", "How long a sample is valid for.").Default("5m").Duration()
 	strictMatch     = kingpin.Flag("graphite.mapping-strict-match", "Only store metrics that match the mapping configuration.").Bool()
-	lastProcessed   = prometheus.NewGauge(
+	dumpFSMPath     = kingpin.Flag("debug.dump-fsm", "The path to dump internal FSM generated for glob matching as Dot file.").Default("").String()
+
+	lastProcessed = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Name: "graphite_last_processed_timestamp_seconds",
 			Help: "Unix timestamp of the last processed graphite metric.",
@@ -207,6 +210,20 @@ func init() {
 	prometheus.MustRegister(version.NewCollector("graphite_exporter"))
 }
 
+func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string) error {
+	f, err := os.Create(dumpFilename)
+	if err != nil {
+		return err
+	}
+	log.Infoln("Start dumping FSM to", dumpFilename)
+	w := bufio.NewWriter(f)
+	mapper.FSM.DumpFSM(w)
+	w.Flush()
+	f.Close()
+	log.Infoln("Finish dumping FSM")
+	return nil
+}
+
 func main() {
 	log.AddFlags(kingpin.CommandLine)
 	kingpin.Version(version.Print("graphite_exporter"))
@@ -228,6 +245,13 @@ func main() {
 		err := c.mapper.InitFromFile(*mappingConfig)
 		if err != nil {
 			log.Fatalf("Error loading metric mapping config: %s", err)
+		}
+	}
+
+	if *dumpFSMPath != "" {
+		err := dumpFSM(c.mapper.(*mapper.MetricMapper), *dumpFSMPath)
+		if err != nil {
+			log.Fatal("Error dumping FSM:", err)
 		}
 	}
 

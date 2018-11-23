@@ -1,13 +1,17 @@
+# 0.4.1 / 2018-11-23
+
+No changes.
+
 # 0.4.0 / 2018-11-23
 
 * [ENHANCEMENT] Log incoming and parsed samples if debug logging is enabled ([#58](https://github.com/prometheus/graphite_exporter/pull/58))
-* [ENHANCEMENT] Speed up glob matching (#59)
+* [ENHANCEMENT] Speed up glob matching ([#59](https://github.com/prometheus/graphite_exporter/pull/59))
 
 This release replaces the implementation of the glob matching mechanism,
 speeding it up significantly. In certain sub-optimal configurations, a warning
 is logged.
 
-This major enhancement was contributed by Wangchong Zhou in prometheus/statsd_exporter/#157.
+This major enhancement was contributed by Wangchong Zhou in [prometheus/statsd_exporter#157](https://github.com/prometheus/statsd_exporter/pulls/157).
 
 # 0.3.0 / 2018-08-22
 

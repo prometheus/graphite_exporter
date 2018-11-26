@@ -114,7 +114,7 @@ func (c *graphiteCollector) processLine(line string) {
 	}
 	originalName := parts[0]
 	var name string
-	mapping, labels, present := c.mapper.GetMapping(originalName, "graphite")
+	mapping, labels, present := c.mapper.GetMapping(originalName, mapper.MetricTypeGauge)
 
 	if (present && mapping.Action == mapper.ActionTypeDrop) || (!present && c.strictMatch) {
 		return

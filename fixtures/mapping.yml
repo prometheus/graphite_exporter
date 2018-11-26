@@ -1,0 +1,7 @@
+mappings:
+- match: rspamd.actions.*
+  name: rspamd_actions
+  labels:
+    action: $1
+- match: rspamd.*
+  name: rspamd_${1}

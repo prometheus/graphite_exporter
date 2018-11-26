@@ -1,3 +1,7 @@
+# 0.4.2 / 2018-11-26
+
+* [BUGFIX] Fix segfault in mapper if mapping config is provided ([#63](https://github.com/prometheus/graphite_exporter/pull/63))
+
 # 0.4.1 / 2018-11-23
 
 No changes.

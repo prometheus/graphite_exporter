@@ -15,7 +15,7 @@ jobs:
     steps:
     - checkout
     - run: make promu
-    - run: make style test vet build
+    - run: make
     - run: git diff --exit-code
     - store_artifacts:
         path: graphite_exporter

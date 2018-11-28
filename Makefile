@@ -14,10 +14,3 @@
 include Makefile.common
 
 DOCKER_IMAGE_NAME ?= graphite-exporter
-
-
-# FIXME(matthiasr): this should be part of the test suite, but it does not
-# finish at least on TravisCI.
-end-to-end-test: build
-	@echo ">> running end-to-end test"
-	@bash end-to-end-test.sh

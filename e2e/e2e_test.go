@@ -27,9 +27,6 @@ import (
 	"time"
 )
 
-func runExporter() {
-}
-
 func TestIssue61(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {

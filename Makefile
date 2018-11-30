@@ -14,3 +14,6 @@
 include Makefile.common
 
 DOCKER_IMAGE_NAME ?= graphite-exporter
+
+# Make sure a binary is built before the e2e test is run
+common-test: common-build

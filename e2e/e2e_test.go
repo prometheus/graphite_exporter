@@ -60,7 +60,7 @@ func TestIssue61(t *testing.T) {
 		}
 	}
 
-	t := time.Now()
+	now := time.Now()
 
 	input := `rspamd.actions.add_header 2 NOW
 rspamd.actions.greylist 0 NOW
@@ -81,7 +81,7 @@ rspamd.pools_freed 171 NOW
 rspamd.scanned 27 NOW
 rspamd.shared_chunks_allocated 34 NOW
 rspamd.spam_count 3 NOW`
-	input = strings.NewReplacer("NOW", fmt.Sprintf("%d", t.Unix())).Replace(input)
+	input = strings.NewReplacer("NOW", fmt.Sprintf("%d", now.Unix())).Replace(input)
 
 	conn, err := net.Dial("tcp", graphiteAddr)
 	if err != nil {
@@ -104,7 +104,7 @@ rspamd.spam_count 3 NOW`
 	}
 	for _, s := range []string{"rspamd_actions{action=\"add_header\"} 2", "rspamd_connections 1"} {
 		if !strings.Contains(string(b), s) {
-			t.Fatalf("Expected %q in %q – input: %q – time: %s", s, string(b), input, time.Now())
+			t.Fatalf("Expected %q in %q – input: %q – time: %s", s, string(b), input, now)
 		}
 	}
 }

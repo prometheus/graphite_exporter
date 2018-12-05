@@ -1,0 +1,21 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"checksumSHA1": "cLOnff6STAFT+x8uo9TSfEI6XHo=",
+			"origin": "github.com/prometheus/graphite_exporter/vendor/github.com/prometheus/statsd_exporter/pkg/mapper",
+			"path": "github.com/prometheus/statsd_exporter/pkg/mapper",
+			"revision": "b3bf4d1f8b920933ef6a02299ef48bcd9ef91bf8",
+			"revisionTime": "2018-12-05T21:54:11Z"
+		},
+		{
+			"checksumSHA1": "PD3Owpjt3Xe75VBVItz01FzRFtE=",
+			"origin": "github.com/prometheus/graphite_exporter/vendor/github.com/prometheus/statsd_exporter/pkg/mapper/fsm",
+			"path": "github.com/prometheus/statsd_exporter/pkg/mapper/fsm",
+			"revision": "b3bf4d1f8b920933ef6a02299ef48bcd9ef91bf8",
+			"revisionTime": "2018-12-05T21:54:11Z"
+		}
+	],
+	"rootPath": "github.com/prometheus/graphite_exporter"
+}

@@ -295,6 +295,10 @@ func main() {
 	}()
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
 		w.Write([]byte(`<html>
       <head><title>Graphite Exporter</title></head>
       <body>

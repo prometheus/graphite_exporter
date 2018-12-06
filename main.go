@@ -180,7 +180,7 @@ func (c *graphiteCollector) processSamples() {
 }
 
 // Collect implements prometheus.Collector.
-func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
+func (c *graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- lastProcessed
 
 	samples := make([]*graphiteSample, 0, c.numsamples)
@@ -207,7 +207,7 @@ func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 }
 
 // Describe implements prometheus.Collector.
-func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c *graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- lastProcessed.Desc()
 }
 

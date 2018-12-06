@@ -76,8 +76,8 @@ type metricMapper interface {
 }
 
 type graphiteCollector struct {
-	samples     map[string]*graphiteSample
-	mu          *sync.Mutex
+	samples     sync.Map
+	numsamples  uint
 	mapper      metricMapper
 	ch          chan *graphiteSample
 	strictMatch bool
@@ -86,8 +86,7 @@ type graphiteCollector struct {
 func newGraphiteCollector() *graphiteCollector {
 	c := &graphiteCollector{
 		ch:          make(chan *graphiteSample, 0),
-		mu:          &sync.Mutex{},
-		samples:     map[string]*graphiteSample{},
+		samples:     sync.Map{},
 		strictMatch: *strictMatch,
 	}
 	go c.processSamples()
@@ -160,19 +159,22 @@ func (c *graphiteCollector) processSamples() {
 			if sample == nil || ok != true {
 				return
 			}
-			c.mu.Lock()
-			c.samples[sample.OriginalName] = sample
-			c.mu.Unlock()
+			c.samples.Store(sample.OriginalName, sample)
+			c.numsamples++
 		case <-ticker:
 			// Garbage collect expired samples.
 			ageLimit := time.Now().Add(-*sampleExpiry)
-			c.mu.Lock()
-			for k, sample := range c.samples {
-				if ageLimit.After(sample.Timestamp) {
-					delete(c.samples, k)
+			c.samples.Range(func(k, v interface{}) bool {
+				sample, ok := v.(*graphiteSample)
+				if !ok {
+					return false
 				}
-			}
-			c.mu.Unlock()
+				if ageLimit.After(sample.Timestamp) {
+					c.samples.Delete(k)
+					c.numsamples--
+				}
+				return true
+			})
 		}
 	}
 }
@@ -181,12 +183,15 @@ func (c *graphiteCollector) processSamples() {
 func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- lastProcessed
 
-	c.mu.Lock()
-	samples := make([]*graphiteSample, 0, len(c.samples))
-	for _, sample := range c.samples {
+	samples := make([]*graphiteSample, 0, c.numsamples)
+	c.samples.Range(func(k, v interface{}) bool {
+		sample, ok := v.(*graphiteSample)
+		if !ok {
+			return false
+		}
 		samples = append(samples, sample)
-	}
-	c.mu.Unlock()
+		return true
+	})
 
 	ageLimit := time.Now().Add(-*sampleExpiry)
 	for _, sample := range samples {

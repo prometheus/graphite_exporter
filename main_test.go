@@ -123,7 +123,11 @@ func TestProcessLine(t *testing.T) {
 	c.ch <- nil
 	for _, k := range testCases {
 		originalName := strings.Split(k.line, " ")[0]
-		sample := c.samples[originalName]
+		data, ok := c.samples.Load(originalName)
+		assert.Equal(t, ok, true)
+		sample, ok := data.(*graphiteSample)
+		assert.Equal(t, ok, true)
+
 		if k.willFail {
 			assert.Nil(t, sample, "Found %s", k.name)
 		} else {

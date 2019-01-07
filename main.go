@@ -85,7 +85,7 @@ type graphiteCollector struct {
 
 func newGraphiteCollector() *graphiteCollector {
 	c := &graphiteCollector{
-		ch:          make(chan *graphiteSample, 0),
+		ch:          make(chan *graphiteSample),
 		mu:          &sync.Mutex{},
 		samples:     map[string]*graphiteSample{},
 		strictMatch: *strictMatch,
@@ -157,7 +157,7 @@ func (c *graphiteCollector) processSamples() {
 	for {
 		select {
 		case sample, ok := <-c.ch:
-			if sample == nil || ok != true {
+			if sample == nil || !ok {
 				return
 			}
 			c.mu.Lock()

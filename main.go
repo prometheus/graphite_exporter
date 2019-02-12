@@ -120,7 +120,6 @@ func (c *graphiteCollector) processLine(line string) {
 		return
 	}
 
-	delete(labels, "name")
 	if present {
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
 	} else {

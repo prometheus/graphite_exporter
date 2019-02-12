@@ -46,8 +46,9 @@ func TestProcessLine(t *testing.T) {
 			line: "my.simple.metric 9001 1534620625",
 			name: "my_simple_metric",
 			labels: map[string]string{
-				"foo": "bar",
-				"zip": "zot",
+				"foo":  "bar",
+				"zip":  "zot",
+				"name": "alabel",
 			},
 			present: true,
 			value:   float64(9001),

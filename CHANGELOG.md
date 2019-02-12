@@ -1,6 +1,7 @@
 # Unreleased
 
 * [BUGFIX] Do not mask the pprof endpoints ([#67](https://github.com/prometheus/graphite_exporter/pull/67))
+* [ENHANCEMENT] Accept 'name' as a label ([#75](https://github.com/prometheus/graphite_exporter/pull/75))
 
 # 0.4.2 / 2018-11-26
 

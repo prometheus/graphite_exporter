@@ -143,7 +143,7 @@ func (c *graphiteCollector) processLine(line string) {
 		Value:        value,
 		Labels:       labels,
 		Type:         prometheus.GaugeValue,
-		Help:         fmt.Sprintf("Graphite metric %s", originalName),
+		Help:         fmt.Sprintf("Graphite metric %s", name),
 		Timestamp:    time.Unix(int64(timestamp), int64(math.Mod(timestamp, 1.0)*1e9)),
 	}
 	log.Debugf("Sample: %+v", sample)

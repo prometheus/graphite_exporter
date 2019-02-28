@@ -1,7 +1,10 @@
-# Unreleased
+# 0.5.0 / 2019-02-28
 
+* [BUGFIX] Update the mapper to fix captures being clobbered ([#77](https://github.com/prometheus/graphite_exporter/pull/77))
 * [BUGFIX] Do not mask the pprof endpoints ([#67](https://github.com/prometheus/graphite_exporter/pull/67))
 * [ENHANCEMENT] Accept 'name' as a label ([#75](https://github.com/prometheus/graphite_exporter/pull/75))
+
+This release also pulls in a more recent version of the Prometheus client library with improved validation and performance.
 
 # 0.4.2 / 2018-11-26
 

@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
@@ -142,7 +143,7 @@ func (c *graphiteCollector) processLine(line string) {
 		Value:        value,
 		Labels:       labels,
 		Type:         prometheus.GaugeValue,
-		Help:         fmt.Sprintf("Graphite metric %s", originalName),
+		Help:         fmt.Sprintf("Graphite metric %s", name),
 		Timestamp:    time.Unix(int64(timestamp), int64(math.Mod(timestamp, 1.0)*1e9)),
 	}
 	log.Debugf("Sample: %+v", sample)
@@ -235,7 +236,7 @@ func main() {
 	log.Infoln("Starting graphite_exporter", version.Info())
 	log.Infoln("Build context", version.BuildContext())
 
-	http.Handle(*metricsPath, prometheus.Handler())
+	http.Handle(*metricsPath, promhttp.Handler())
 	c := newGraphiteCollector()
 	prometheus.MustRegister(c)
 

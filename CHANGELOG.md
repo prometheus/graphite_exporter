@@ -1,3 +1,7 @@
+# ?.?.? / unreleased
+
+* [CHANGE] Do not run as root in the Docker container by default ([#85](https://github.com/prometheus/graphite_exporter/pull/85))
+
 # 0.5.0 / 2019-02-28
 
 * [BUGFIX] Update the mapper to fix captures being clobbered ([#77](https://github.com/prometheus/graphite_exporter/pull/77))

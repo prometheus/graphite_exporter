@@ -27,7 +27,7 @@ echo "test_tcp 1234 $(date +%s)" | nc localhost 9109
 echo "test_udp 1234 $(date +%s)" | nc -u -w1 localhost 9109
 ```
 
-Metrics will be available on [http://localhost:9108/metrics](http://localhost:9108/metric).
+Metrics will be available on [http://localhost:9108/metrics](http://localhost:9108/metrics).
 
 To avoid using unbounded memory, metrics will be garbage collected five minutes after
 they are last pushed to. This is configurable with the `--graphite.sample-expiry` flag.

@@ -1,0 +1,74 @@
+defaults:
+  glob_disable_ordering: true
+mappings:
+  - match: flink.jmj.*.*
+    name: flink_${2}
+    labels:
+      job: $1
+  - match: flink.jm.*.*.*.*.*.*
+    name: flink_${2}_${3}_${4}_${5}_${6}
+    labels:
+      job: $1
+  - match: flink.jm.*.*.*.*.*
+    name: flink_${2}_${3}_${4}_${5}
+    labels:
+      job: $1
+  - match: flink.jm.*.*.*.*
+    name: flink_${2}_${3}_${4}
+    labels:
+      job: $1
+  - match: flink.tm.*.*.*.*.*.*.*
+    name: flink_${3}_${4}_${5}_${6}_${7}
+    labels:
+      job: $1
+      tm: $2
+  - match: flink.tm.*.*.*.*.*.*
+    name: flink_${3}_${4}_${5}_${6}
+    labels:
+      job: $1
+      tm: $2
+  - match: flink.tm.*.*.*.*.*
+    name: flink_${3}_${4}_${5}
+    labels:
+      job: $1
+      tm: $2
+  - match: flink.op.*.*.*.*.KafkaConsumer.*
+    name: flink_kafka_consumer_${5}
+    labels:
+      job: $1
+      operator: $3
+      subtask: $4
+      task: $2
+  - match: flink.op.*.*.*.*.KafkaProducer.*
+    name: flink_kafka_producer_${5}
+    labels:
+      job: $1
+      operator: $3
+      subtask: $4
+      task: $2
+  - match: flink.op.*.*.*.*.*
+    name: flink_${5}
+    labels:
+      job: $1
+      operator: $3
+      subtask: $4
+      task: $2
+  - match: flink.op.*.*.*.*.*.*
+    name: flink_${5}_${6}
+    labels:
+      job: $1
+      operator: $3
+      subtask: $4
+      task: $2
+  - match: flink.tsk.*.*.*.*
+    name: flink_${4}
+    labels:
+      job: $1
+      subtask: $3
+      task: $2
+  - match: flink.tsk.*.*.*.*.*
+    name: flink_${4}_${5}
+    labels:
+      job: $1
+      subtask: $3
+      task: $2

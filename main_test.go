@@ -113,6 +113,7 @@ func TestProcessLine(t *testing.T) {
 	}
 
 	c := newGraphiteCollector()
+	defer c.close()
 
 	for _, testCase := range testCases {
 
@@ -148,4 +149,13 @@ func TestProcessLine(t *testing.T) {
 			}
 		}
 	}
+}
+
+// Integration test almost the whole thing. This only bypasses the actual sockets.
+func TestIntegration(t *testing.T) {
+	metricLine = fmt.Sprintf("my.metric 42 %d", time.Now().Unix()-2)
+
+	c := newGraphiteCollector()
+	defer c.close()
+
 }

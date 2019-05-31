@@ -95,6 +95,11 @@ func newGraphiteCollector() *graphiteCollector {
 	return c
 }
 
+func (c *graphiteCollector) stop() {
+	close(c.sampleCh)
+	close(c.lineCh)
+}
+
 func (c *graphiteCollector) processReader(reader io.Reader) {
 	lineScanner := bufio.NewScanner(reader)
 	for {

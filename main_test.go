@@ -183,7 +183,7 @@ func testGathering(t *testing.T, mapper metricMapper, send func(c *graphiteColle
 // sending some samples. Much of the validation happens at scrape time, and we
 // frequently run into issues that only manifest there.
 func TestGathering(t *testing.T) {
-	metricLine := fmt.Sprintf("my.metric 42 %d", time.Now().Unix()-2)
+	metricLine := fmt.Sprintf("my.metric 42 %d", time.Now().Unix()+2)
 
 	t.Run("single", func(t *testing.T) {
 		testGathering(
@@ -234,7 +234,7 @@ func TestGathering(t *testing.T) {
 			t.Fatalf("failed to read fixture: %v", err)
 		}
 
-		metrics := bytes.ReplaceAll(fixture, []byte("NOW"), []byte(fmt.Sprintf("%d", time.Now().Unix()-2)))
+		metrics := bytes.ReplaceAll(fixture, []byte("NOW"), []byte(fmt.Sprintf("%d", time.Now().Unix()+2)))
 
 		testGathering(
 			t,
@@ -260,7 +260,7 @@ func TestGathering(t *testing.T) {
 			bytes.ReplaceAll(
 				fixture,
 				[]byte("NOW"),
-				[]byte(fmt.Sprintf("%d", time.Now().Unix()-2)),
+				[]byte(fmt.Sprintf("%d", time.Now().Unix()+2)),
 			),
 			[]byte{'\n'},
 		)
@@ -291,7 +291,7 @@ func TestGathering(t *testing.T) {
 			bytes.ReplaceAll(
 				fixture,
 				[]byte("NOW"),
-				[]byte(fmt.Sprintf("%d", time.Now().Unix()-2)),
+				[]byte(fmt.Sprintf("%d", time.Now().Unix()+2)),
 			),
 			[]byte{'\n'},
 		)

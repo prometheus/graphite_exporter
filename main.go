@@ -97,7 +97,7 @@ func newGraphiteCollector(mapper metricMapper) *graphiteCollector {
 }
 
 func (c *graphiteCollector) stop() {
-	close(c.lineCh)
+	close(c.ch)
 }
 
 func (c *graphiteCollector) processReader(reader io.Reader) {
@@ -108,8 +108,6 @@ func (c *graphiteCollector) processReader(reader io.Reader) {
 		}
 		c.processLine(lineScanner.Text())
 	}
-	// If we reach this, the line channel has been closed. Continue shutting down the processing pipeline.
-	close(c.sampleCh)
 }
 
 func (c *graphiteCollector) processLine(line string) {

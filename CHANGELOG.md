@@ -1,4 +1,4 @@
-# 0.6.0 / unreleased
+# 0.6.0 / 2019-05-31
 
 * [CHANGE] Do not run as root in the Docker container by default ([#85](https://github.com/prometheus/graphite_exporter/pull/85))
 * [BUGFIX] Serialize processing of samples ([#94](https://github.com/prometheus/graphite_exporter/pull/94))

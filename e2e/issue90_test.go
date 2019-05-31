@@ -824,7 +824,8 @@ flink.tsk.test.Source:-Socket-Stream-->-Flat-Map.0.numRecordsOut.count 0.000000 
 		t.Fatalf("read error: %v", err)
 	}
 
-	responseString := string(b)
-	print(responseString)
+	if resp.StatusCode != 200 {
+		t.Errorf("unexpected status, want 200, got %v, body: %s", resp.Status, b)
+	}
 
 }

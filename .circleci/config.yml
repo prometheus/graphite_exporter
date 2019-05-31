@@ -24,7 +24,6 @@ jobs:
 
   build:
     machine: true
-    working_directory: /home/circleci/.go_workspace/src/github.com/prometheus/graphite_exporter
 
     steps:
     - checkout
@@ -61,9 +60,6 @@ jobs:
     steps:
     - checkout
     - setup_remote_docker
-    - run: mkdir -v -p ${HOME}/bin
-    - run: curl -L 'https://github.com/aktau/github-release/releases/download/v0.7.2/linux-amd64-github-release.tar.bz2' | tar xvjf - --strip-components 3 -C ${HOME}/bin
-    - run: echo 'export PATH=${HOME}/bin:${PATH}' >> ${BASH_ENV}
     - attach_workspace:
         at: .
     - run: make promu
@@ -76,6 +72,8 @@ jobs:
     - run: ln -s .build/linux-amd64/graphite_exporter graphite_exporter
     - run: make docker DOCKER_IMAGE_TAG=$CIRCLE_TAG
     - run: make docker DOCKER_IMAGE_TAG=$CIRCLE_TAG DOCKER_REPO=quay.io/prometheus
+    - run: docker login -u $DOCKER_LOGIN -p $DOCKER_PASSWORD
+    - run: docker login -u $QUAY_LOGIN -p $QUAY_PASSWORD quay.io
     - run: make docker-publish DOCKER_IMAGE_TAG="$CIRCLE_TAG"
     - run: make docker-publish DOCKER_IMAGE_TAG="$CIRCLE_TAG" DOCKER_REPO=quay.io/prometheus
     - run: make docker-manifest DOCKER_IMAGE_TAG="$CIRCLE_TAG"

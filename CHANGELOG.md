@@ -1,6 +1,12 @@
-# ?.?.? / unreleased
+# 0.6.0 / unreleased
 
 * [CHANGE] Do not run as root in the Docker container by default ([#85](https://github.com/prometheus/graphite_exporter/pull/85))
+* [BUGFIX] Serialize processing of samples ([#94](https://github.com/prometheus/graphite_exporter/pull/94))
+
+This issue fixes a race condition in sample processing that showed if multiple
+clients sent metrics simultaneously, or multiple metrics were sent in
+individual UDP packets. It would manifest as duplicate metrics being exported
+(0.4.x) or the metrics endpoint failing altogether (0.5.0).
 
 # 0.5.0 / 2019-02-28
 

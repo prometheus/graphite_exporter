@@ -14,8 +14,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"strings"
 	"sync"
 	"testing"
@@ -222,22 +223,93 @@ func TestGathering(t *testing.T) {
 		)
 	})
 
-	t.Run("issue90_serial", func(t *testing.T) {
+	t.Run("issue90_single", func(t *testing.T) {
 		m := &mapper.MetricMapper{}
 		if err := m.InitFromFile("e2e/fixtures/issue90.yml"); err != nil {
-			t.Fatalf("failed to initialize mapper: %v", err
+			t.Fatalf("failed to initialize mapper: %v", err)
 		}
+
+		fixture, err := ioutil.ReadFile("e2e/fixtures/issue90_in.txt")
+		if err != nil {
+			t.Fatalf("failed to read fixture: %v", err)
+		}
+
+		metrics := bytes.ReplaceAll(fixture, []byte("NOW"), []byte(fmt.Sprintf("%d", time.Now().Unix()-2)))
 
 		testGathering(
 			t,
 			m,
 			func(c *graphiteCollector) {
-				f, err := os.Open("e2e/fixtures/issue90_in.txt")
-				if err != nil {
-					t.Fatalf("failed to read fixture: %v", err)
+				c.processReader(bytes.NewReader(metrics))
+			},
+		)
+	})
+
+	t.Run("issue90_serial", func(t *testing.T) {
+		m := &mapper.MetricMapper{}
+		if err := m.InitFromFile("e2e/fixtures/issue90.yml"); err != nil {
+			t.Fatalf("failed to initialize mapper: %v", err)
+		}
+
+		fixture, err := ioutil.ReadFile("e2e/fixtures/issue90_in.txt")
+		if err != nil {
+			t.Fatalf("failed to read fixture: %v", err)
+		}
+
+		metricLines := bytes.Split(
+			bytes.ReplaceAll(
+				fixture,
+				[]byte("NOW"),
+				[]byte(fmt.Sprintf("%d", time.Now().Unix()-2)),
+			),
+			[]byte{'\n'},
+		)
+
+		testGathering(
+			t,
+			m,
+			func(c *graphiteCollector) {
+				for _, line := range metricLines {
+					c.processReader(bytes.NewReader(line))
 				}
-				defer f.Close()
-				c.processReader(f)
+			},
+		)
+	})
+
+	t.Run("issue90_parallel", func(t *testing.T) {
+		m := &mapper.MetricMapper{}
+		if err := m.InitFromFile("e2e/fixtures/issue90.yml"); err != nil {
+			t.Fatalf("failed to initialize mapper: %v", err)
+		}
+
+		fixture, err := ioutil.ReadFile("e2e/fixtures/issue90_in.txt")
+		if err != nil {
+			t.Fatalf("failed to read fixture: %v", err)
+		}
+
+		metricLines := bytes.Split(
+			bytes.ReplaceAll(
+				fixture,
+				[]byte("NOW"),
+				[]byte(fmt.Sprintf("%d", time.Now().Unix()-2)),
+			),
+			[]byte{'\n'},
+		)
+
+		testGathering(
+			t,
+			m,
+			func(c *graphiteCollector) {
+				w := sync.WaitGroup{}
+				for _, line := range metricLines {
+					r := bytes.NewReader(line)
+					w.Add(1)
+					go func() {
+						c.processReader(r)
+						w.Done()
+					}()
+				}
+				w.Wait()
 			},
 		)
 	})

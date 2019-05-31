@@ -80,18 +80,21 @@ type graphiteCollector struct {
 	samples     map[string]*graphiteSample
 	mu          *sync.Mutex
 	mapper      metricMapper
-	ch          chan *graphiteSample
+	sampleCh    chan *graphiteSample
+	lineCh      chan string
 	strictMatch bool
 }
 
 func newGraphiteCollector() *graphiteCollector {
 	c := &graphiteCollector{
-		ch:          make(chan *graphiteSample),
+		sampleCh:    make(chan *graphiteSample),
+		lineCh:      make(chan string),
 		mu:          &sync.Mutex{},
 		samples:     map[string]*graphiteSample{},
 		strictMatch: *strictMatch,
 	}
 	go c.processSamples()
+	go c.processLines()
 	return c
 }
 
@@ -101,7 +104,13 @@ func (c *graphiteCollector) processReader(reader io.Reader) {
 		if ok := lineScanner.Scan(); !ok {
 			break
 		}
-		c.processLine(lineScanner.Text())
+		c.lineCh <- lineScanner.Text()
+	}
+}
+
+func (c *graphiteCollector) processLines() {
+	for line := range c.lineCh {
+		c.processLine(line)
 	}
 }
 
@@ -148,7 +157,7 @@ func (c *graphiteCollector) processLine(line string) {
 	}
 	log.Debugf("Sample: %+v", sample)
 	lastProcessed.Set(float64(time.Now().UnixNano()) / 1e9)
-	c.ch <- &sample
+	c.sampleCh <- &sample
 }
 
 func (c *graphiteCollector) processSamples() {
@@ -156,7 +165,7 @@ func (c *graphiteCollector) processSamples() {
 
 	for {
 		select {
-		case sample, ok := <-c.ch:
+		case sample, ok := <-c.sampleCh:
 			if sample == nil || !ok {
 				return
 			}

@@ -134,7 +134,7 @@ func TestProcessLine(t *testing.T) {
 
 	}
 
-	c.ch <- nil
+	c.sampleCh <- nil
 	for _, k := range testCases {
 		originalName := strings.Split(k.line, " ")[0]
 		sample := c.samples[originalName]

@@ -14,8 +14,10 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
@@ -112,8 +114,8 @@ func TestProcessLine(t *testing.T) {
 		},
 	}
 
-	c := newGraphiteCollector()
-	defer c.close()
+	c := newGraphiteCollector(&mockMapper{})
+	defer c.stop()
 
 	for _, testCase := range testCases {
 
@@ -151,11 +153,30 @@ func TestProcessLine(t *testing.T) {
 	}
 }
 
-// Integration test almost the whole thing. This only bypasses the actual sockets.
-func TestIntegration(t *testing.T) {
-	metricLine = fmt.Sprintf("my.metric 42 %d", time.Now().Unix()-2)
+func newCollectorForTest(t *testing.T, m metricMapper) (*graphiteCollector, prometheus.Gatherer) {
+	collector := newGraphiteCollector(&mapper.MetricMapper{})
 
-	c := newGraphiteCollector()
-	defer c.close()
+	registry := prometheus.NewRegistry()
+	if err := registry.Register(collector); err != nil {
+		t.Fatalf("failed to register collector: %v", err)
+	}
 
+	return collector, registry
+}
+
+// TestGathering checks whether we can successfully gather metrics after
+// sending some samples. Much of the validation happens at scrape time, and we
+// frequently run into issues that only manifest there.
+func TestGathering(t *testing.T) {
+	metricLine := fmt.Sprintf("my.metric 42 %d", time.Now().Unix()-2)
+
+	c, registry := newCollectorForTest(t, &mapper.MetricMapper{})
+	defer c.stop()
+
+	c.processReader(strings.NewReader(metricLine))
+
+	// TODO: check the results
+	if _, err := registry.Gather(); err != nil {
+		t.Errorf("failed to gather metrics: %v", err)
+	}
 }

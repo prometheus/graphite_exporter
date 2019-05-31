@@ -84,19 +84,19 @@ type graphiteCollector struct {
 	strictMatch bool
 }
 
-func newGraphiteCollector() *graphiteCollector {
+func newGraphiteCollector(mapper metricMapper) *graphiteCollector {
 	c := &graphiteCollector{
 		ch:          make(chan *graphiteSample),
 		mu:          &sync.Mutex{},
 		samples:     map[string]*graphiteSample{},
 		strictMatch: *strictMatch,
+		mapper:      mapper,
 	}
 	go c.processSamples()
 	return c
 }
 
 func (c *graphiteCollector) stop() {
-	close(c.sampleCh)
 	close(c.lineCh)
 }
 
@@ -108,6 +108,8 @@ func (c *graphiteCollector) processReader(reader io.Reader) {
 		}
 		c.processLine(lineScanner.Text())
 	}
+	// If we reach this, the line channel has been closed. Continue shutting down the processing pipeline.
+	close(c.sampleCh)
 }
 
 func (c *graphiteCollector) processLine(line string) {
@@ -242,16 +244,17 @@ func main() {
 	log.Infoln("Build context", version.BuildContext())
 
 	http.Handle(*metricsPath, promhttp.Handler())
-	c := newGraphiteCollector()
-	prometheus.MustRegister(c)
 
-	c.mapper = &mapper.MetricMapper{}
+	m := &mapper.MetricMapper{}
 	if *mappingConfig != "" {
-		err := c.mapper.InitFromFile(*mappingConfig)
+		err := m.InitFromFile(*mappingConfig)
 		if err != nil {
 			log.Fatalf("Error loading metric mapping config: %s", err)
 		}
 	}
+
+	c := newGraphiteCollector(m)
+	prometheus.MustRegister(c)
 
 	if *dumpFSMPath != "" {
 		err := dumpFSM(c.mapper.(*mapper.MetricMapper), *dumpFSMPath)

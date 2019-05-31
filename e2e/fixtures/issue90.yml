@@ -1,0 +1,9 @@
+defaults:
+  glob_disable_ordering: true
+mappings:
+  - match: flink.tsk.*.*.*.*.*
+    name: flink_${4}_${5}
+    labels:
+      job: $1
+      subtask: $3
+      task: $2

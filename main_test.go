@@ -15,7 +15,9 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -164,19 +166,79 @@ func newCollectorForTest(t *testing.T, m metricMapper) (*graphiteCollector, prom
 	return collector, registry
 }
 
+func testGathering(t *testing.T, mapper metricMapper, send func(c *graphiteCollector)) {
+	c, registry := newCollectorForTest(t, mapper)
+	defer c.stop()
+
+	send(c)
+
+	// TODO: check the results
+	if _, err := registry.Gather(); err != nil {
+		t.Errorf("failed to gather metrics: %v", err)
+	}
+}
+
 // TestGathering checks whether we can successfully gather metrics after
 // sending some samples. Much of the validation happens at scrape time, and we
 // frequently run into issues that only manifest there.
 func TestGathering(t *testing.T) {
 	metricLine := fmt.Sprintf("my.metric 42 %d", time.Now().Unix()-2)
 
-	c, registry := newCollectorForTest(t, &mapper.MetricMapper{})
-	defer c.stop()
+	t.Run("single", func(t *testing.T) {
+		testGathering(
+			t,
+			&mapper.MetricMapper{},
+			func(c *graphiteCollector) { c.processReader(strings.NewReader(metricLine)) },
+		)
+	})
 
-	c.processReader(strings.NewReader(metricLine))
+	t.Run("serial", func(t *testing.T) {
+		testGathering(
+			t,
+			&mapper.MetricMapper{},
+			func(c *graphiteCollector) {
+				for i := 0; i < 1000; i++ {
+					c.processReader(strings.NewReader(metricLine))
+				}
+			},
+		)
+	})
 
-	// TODO: check the results
-	if _, err := registry.Gather(); err != nil {
-		t.Errorf("failed to gather metrics: %v", err)
-	}
+	t.Run("parallel", func(t *testing.T) {
+		testGathering(
+			t,
+			&mapper.MetricMapper{},
+			func(c *graphiteCollector) {
+				w := sync.WaitGroup{}
+				for i := 0; i < 1000; i++ {
+					w.Add(1)
+					go func() {
+						c.processReader(strings.NewReader(metricLine))
+						w.Done()
+					}()
+				}
+				w.Wait()
+			},
+		)
+	})
+
+	t.Run("issue90_serial", func(t *testing.T) {
+		m := &mapper.MetricMapper{}
+		if err := m.InitFromFile("e2e/fixtures/issue90.yml"); err != nil {
+			t.Fatalf("failed to initialize mapper: %v", err
+		}
+
+		testGathering(
+			t,
+			m,
+			func(c *graphiteCollector) {
+				f, err := os.Open("e2e/fixtures/issue90_in.txt")
+				if err != nil {
+					t.Fatalf("failed to read fixture: %v", err)
+				}
+				defer f.Close()
+				c.processReader(f)
+			},
+		)
+	})
 }

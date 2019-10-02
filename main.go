@@ -253,7 +253,7 @@ func main() {
 	prometheus.MustRegister(sampleExpiryMetric)
 	sampleExpiryMetric.Set(sampleExpiry.Seconds())
 
-	level.Info(logger).Log("msg", "Starting graphite_exporter", "version info", version.Info(), "version build context", version.BuildContext())
+	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info(), "version_build_context", version.BuildContext())
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	c := newGraphiteCollector(logger)

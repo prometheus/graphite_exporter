@@ -128,7 +128,7 @@ func (c *graphiteCollector) processLine(line string) {
 	level.Debug(c.logger).Log("msg", "Incoming line", "line", line)
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
-		level.Info(c.logger).Log("msg", "Invalid part count", "length", len(parts), "line", line)
+		level.Info(c.logger).Log("msg", "Invalid part count", "length", len(parts), "parts", line)
 		return
 	}
 	originalName := parts[0]
@@ -253,7 +253,8 @@ func main() {
 	prometheus.MustRegister(sampleExpiryMetric)
 	sampleExpiryMetric.Set(sampleExpiry.Seconds())
 
-	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info(), "version_build_context", version.BuildContext())
+	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info())
+	level.Info(logger).Log("build_context", version.BuildContext())
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	c := newGraphiteCollector(logger)
@@ -263,20 +264,23 @@ func main() {
 	if *mappingConfig != "" {
 		err := c.mapper.InitFromFile(*mappingConfig)
 		if err != nil {
-			panic("Error loading metric mapping config: " + err.Error())
+			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
+			os.Exit(1)
 		}
 	}
 
 	if *dumpFSMPath != "" {
 		err := dumpFSM(c.mapper.(*mapper.MetricMapper), *dumpFSMPath, logger)
 		if err != nil {
-			panic("Error dumping FSM: " + err.Error())
+			level.Error(logger).Log("msg", "Error dumping FSM", "err", err)
+			os.Exit(1)
 		}
 	}
 
 	tcpSock, err := net.Listen("tcp", *graphiteAddress)
 	if err != nil {
-		panic("Error binding to TCP socket: " + err.Error())
+		level.Error(logger).Log("msg", "Error binding to TCP socket", "err", err)
+		os.Exit(1)
 	}
 	go func() {
 		for {
@@ -294,11 +298,13 @@ func main() {
 
 	udpAddress, err := net.ResolveUDPAddr("udp", *graphiteAddress)
 	if err != nil {
-		panic("Error resolving UDP address: " + err.Error())
+		level.Error(logger).Log("msg", "Error resolving UDP address", "err", err)
+		os.Exit(1)
 	}
 	udpSock, err := net.ListenUDP("udp", udpAddress)
 	if err != nil {
-		panic("Error listening to UDP address: " + err.Error())
+		level.Error(logger).Log("msg", "Error listening to UDP address", "err", err)
+		os.Exit(1)
 	}
 	go func() {
 		defer udpSock.Close()
@@ -329,5 +335,6 @@ func main() {
 	})
 
 	level.Info(logger).Log("msg", "Listening on "+*listenAddress)
-	panic(http.ListenAndServe(*listenAddress, nil))
+	level.Error(logger).Log("err", http.ListenAndServe(*listenAddress, nil))
+	os.Exit(1)
 }

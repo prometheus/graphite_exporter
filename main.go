@@ -128,7 +128,7 @@ func (c *graphiteCollector) processLine(line string) {
 	level.Debug(c.logger).Log("msg", "Incoming line", "line", line)
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
-		level.Info(c.logger).Log("msg", "Invalid part count", "length", len(parts), "parts", line)
+		level.Info(c.logger).Log("msg", "Invalid part count", "parts", len(parts), "line", line)
 		return
 	}
 	originalName := parts[0]

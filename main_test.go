@@ -17,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"github.com/stretchr/testify/assert"
@@ -112,7 +113,7 @@ func TestProcessLine(t *testing.T) {
 		},
 	}
 
-	c := newGraphiteCollector()
+	c := newGraphiteCollector(log.NewNopLogger())
 
 	for _, testCase := range testCases {
 

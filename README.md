@@ -66,6 +66,12 @@ mappings:
     job: ${1}_server
     outcome: $3
     provider: $2
+- match: 'servers\.(.*)\.networking\.subnetworks\.transmissions\.([a-z0-9-]+)\.(.*)'
+  match_type: regex
+  name: 'servers_networking_transmissions_${3}'
+  labels: 
+    hostname: ${1}
+    device: ${2}
 ```
 
 This would transform these example graphite metrics into Prometheus metrics as
@@ -79,6 +85,11 @@ follows:
 
     test.web-server.foo.bar
      => test_web__server_foo_bar{}
+    
+    servers.rack-003-server-c4de.networking.subnetworks.transmissions.eth0.failure.mean_rate
+     => servers_networking_transmissions_failures_mean_rate{device="eth0",hostname="c3153b07ffe8"}
+
+
 
 ### Conversion from legacy configuration
 

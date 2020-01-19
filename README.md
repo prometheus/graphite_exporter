@@ -87,7 +87,7 @@ follows:
      => test_web__server_foo_bar{}
     
     servers.rack-003-server-c4de.networking.subnetworks.transmissions.eth0.failure.mean_rate
-     => servers_networking_transmissions_failures_mean_rate{device="eth0",hostname="rack-003-server-c4de"}
+     => servers_networking_transmissions_failure_mean_rate{device="eth0",hostname="rack-003-server-c4de"}
 
 
 

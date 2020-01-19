@@ -229,6 +229,9 @@ func init() {
 }
 
 func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string, logger log.Logger) error {
+	if mapper.FSM == nil {
+		return fmt.Errorf("FSM is not available. Posible due to the presence of regex patterns")
+	}
 	f, err := os.Create(dumpFilename)
 	if err != nil {
 		return err

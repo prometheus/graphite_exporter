@@ -230,7 +230,7 @@ func init() {
 
 func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string, logger log.Logger) error {
 	if mapper.FSM == nil {
-		return fmt.Errorf("FSM is not available. Posible due to the presence of regex patterns")
+		return fmt.Errorf("no FSM available to be dumped, possibly because the mapping contains regex patterns")
 	}
 	f, err := os.Create(dumpFilename)
 	if err != nil {

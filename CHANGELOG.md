@@ -1,7 +1,8 @@
 # 0.7.0 / unreleased
 
 * [CHANGE] Update logging library and flags ([#109](https://github.com/prometheus/graphite_exporter/pull/109))
-
+* [CHANGE] Updated prometheus golang client and statsd mapper dependency. ([#113](https://github.com/prometheus/graphite_exporter/pull/113))
+ 
 # 0.6.2 / 2019-06-03
 
 * [CHANGE] Do not run as root in the Docker container by default ([#85](https://github.com/prometheus/graphite_exporter/pull/85))

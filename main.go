@@ -47,6 +47,7 @@ var (
 	mappingConfig   = kingpin.Flag("graphite.mapping-config", "Metric mapping configuration file name.").Default("").String()
 	sampleExpiry    = kingpin.Flag("graphite.sample-expiry", "How long a sample is valid for.").Default("5m").Duration()
 	strictMatch     = kingpin.Flag("graphite.mapping-strict-match", "Only store metrics that match the mapping configuration.").Bool()
+	cacheSize       = kingpin.Flag("graphite.cache-size", "Maximum size of your metric mapping cache. Relies on least recently used replacement policy if max size is reached.").Default("1000").Int()
 	dumpFSMPath     = kingpin.Flag("debug.dump-fsm", "The path to dump internal FSM generated for glob matching as Dot file.").Default("").String()
 
 	lastProcessed = prometheus.NewGauge(
@@ -80,7 +81,7 @@ func (s graphiteSample) String() string {
 
 type metricMapper interface {
 	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
-	InitFromFile(string) error
+	InitFromFile(string, int) error
 }
 
 type graphiteCollector struct {
@@ -262,7 +263,7 @@ func main() {
 
 	c.mapper = &mapper.MetricMapper{}
 	if *mappingConfig != "" {
-		err := c.mapper.InitFromFile(*mappingConfig)
+		err := c.mapper.InitFromFile(*mappingConfig, *cacheSize)
 		if err != nil {
 			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
 			os.Exit(1)

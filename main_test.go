@@ -38,7 +38,7 @@ func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType)
 
 }
 
-func (m *mockMapper) InitFromFile(string) error {
+func (m *mockMapper) InitFromFile(string, int) error {
 	return nil
 }
 

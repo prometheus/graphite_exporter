@@ -1,9 +1,13 @@
-# 0.7.0 / unreleased
+## 0.7.0-rc1 / 2020-01-21
 
 * [CHANGE] Update logging library and flags ([#109](https://github.com/prometheus/graphite_exporter/pull/109))
 * [CHANGE] Updated prometheus golang client and statsd mapper dependency. ([#113](https://github.com/prometheus/graphite_exporter/pull/113))
+
+This release updates several dependencies. Logging-related flags have changed.
+
+The metric mapping library is now at the level of [statsd exporter 0.14.1](https://github.com/prometheus/statsd_exporter/blob/master/CHANGELOG.md#0141--2010-01-13), bringing in various performance improvements. See the statsd exporter changelog for the detailed changes.
  
-# 0.6.2 / 2019-06-03
+## 0.6.2 / 2019-06-03
 
 * [CHANGE] Do not run as root in the Docker container by default ([#85](https://github.com/prometheus/graphite_exporter/pull/85))
 * [BUGFIX] Serialize processing of samples ([#94](https://github.com/prometheus/graphite_exporter/pull/94))
@@ -13,23 +17,23 @@ clients sent metrics simultaneously, or multiple metrics were sent in
 individual UDP packets. It would manifest as duplicate metrics being exported
 (0.4.x) or the metrics endpoint failing altogether (0.5.0).
 
-# 0.5.0 / 2019-02-28
+## 0.5.0 / 2019-02-28
 
+* [ENHANCEMENT] Accept 'name' as a label ([#75](https://github.com/prometheus/graphite_exporter/pull/75))
 * [BUGFIX] Update the mapper to fix captures being clobbered ([#77](https://github.com/prometheus/graphite_exporter/pull/77))
 * [BUGFIX] Do not mask the pprof endpoints ([#67](https://github.com/prometheus/graphite_exporter/pull/67))
-* [ENHANCEMENT] Accept 'name' as a label ([#75](https://github.com/prometheus/graphite_exporter/pull/75))
 
 This release also pulls in a more recent version of the Prometheus client library with improved validation and performance.
 
-# 0.4.2 / 2018-11-26
+## 0.4.2 / 2018-11-26
 
 * [BUGFIX] Fix segfault in mapper if mapping config is provided ([#63](https://github.com/prometheus/graphite_exporter/pull/63))
 
-# 0.4.1 / 2018-11-23
+## 0.4.1 / 2018-11-23
 
 No changes.
 
-# 0.4.0 / 2018-11-23
+## 0.4.0 / 2018-11-23
 
 * [ENHANCEMENT] Log incoming and parsed samples if debug logging is enabled ([#58](https://github.com/prometheus/graphite_exporter/pull/58))
 * [ENHANCEMENT] Speed up glob matching ([#59](https://github.com/prometheus/graphite_exporter/pull/59))
@@ -40,7 +44,7 @@ is logged.
 
 This major enhancement was contributed by Wangchong Zhou in [prometheus/statsd_exporter#157](https://github.com/prometheus/statsd_exporter/pulls/157).
 
-# 0.3.0 / 2018-08-22
+## 0.3.0 / 2018-08-22
 
 This release contains two major breaking changes:
 
@@ -59,12 +63,12 @@ Regular expressions can be used to match on Graphite metric names beyond extract
 * [FEATURE] Add pprof endpoint ([#33](https://github.com/prometheus/graphite_exporter/33))
 * [BUGFIX] Accept whitespace around the Graphite protocol lines ([#53](https://github.com/prometheus/graphite_exporter/53))
 
-# 0.2.0 / 2017-03-01
+## 0.2.0 / 2017-03-01
 
 * [FEATURE] Added flag to allow dropping of unmatched metrics
 * [ENHANCEMENT] Logging changes and standardisation
 
 
-# 0.1.0 / 2015-05-05
+## 0.1.0 / 2015-05-05
 
 Initial release.

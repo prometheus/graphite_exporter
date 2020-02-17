@@ -82,6 +82,7 @@ func (s graphiteSample) String() string {
 type metricMapper interface {
 	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
 	InitFromFile(string, int) error
+	InitCache(cacheSize int)
 }
 
 type graphiteCollector struct {
@@ -271,6 +272,8 @@ func main() {
 			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
 			os.Exit(1)
 		}
+	} else {
+		c.mapper.InitCache(0)
 	}
 
 	if *dumpFSMPath != "" {

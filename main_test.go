@@ -41,7 +41,9 @@ func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType)
 func (m *mockMapper) InitFromFile(string, int) error {
 	return nil
 }
+func (m *mockMapper) InitCache(int) {
 
+}
 func TestProcessLine(t *testing.T) {
 
 	type testCase struct {

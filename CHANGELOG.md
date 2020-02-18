@@ -1,5 +1,5 @@
+## 0.7.0-rc2 / 2020-02-18
 
-## Unrealesed
 * [BUGFIX] Fix bug around statsd mapper cache init ([#118](https://github.com/prometheus/graphite_exporter/pull/118))
 
 ## 0.7.0-rc1 / 2020-01-21

@@ -108,3 +108,84 @@ rspamd.spam_count 3 NOW`
 		}
 	}
 }
+
+func TestIssue111(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	webAddr, graphiteAddr := fmt.Sprintf("127.0.0.1:%d", 9108), fmt.Sprintf("127.0.0.1:%d", 9109)
+	exporter := exec.Command(
+		filepath.Join(cwd, "..", "graphite_exporter"),
+		"--web.listen-address", webAddr,
+		"--graphite.listen-address", graphiteAddr,
+	)
+	err = exporter.Start()
+	if err != nil {
+		t.Fatalf("execution error: %v", err)
+	}
+	defer exporter.Process.Kill()
+
+	for i := 0; i < 10; i++ {
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+		resp, err := http.Get("http://" + webAddr)
+		if err != nil {
+			continue
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+	}
+
+	now := time.Now()
+
+	input := `rspamd.actions.add_header 2 NOW
+rspamd.actions.greylist 0 NOW
+rspamd.actions.no_action 24 NOW
+rspamd.actions.reject 1 NOW
+rspamd.actions.rewrite_subject 0 NOW
+rspamd.actions.soft_reject 0 NOW
+rspamd.bytes_allocated 4165268944 NOW
+rspamd.chunks_allocated 4294966730 NOW
+rspamd.chunks_freed 0 NOW
+rspamd.chunks_oversized 1 NOW
+rspamd.connections 1 NOW
+rspamd.control_connections 1 NOW
+rspamd.ham_count 24 NOW
+rspamd.learned 2 NOW
+rspamd.pools_allocated 59 NOW
+rspamd.pools_freed 171 NOW
+rspamd.scanned 27 NOW
+rspamd.shared_chunks_allocated 34 NOW
+rspamd.spam_count 3 NOW`
+	input = strings.NewReplacer("NOW", fmt.Sprintf("%d", now.Unix())).Replace(input)
+
+	conn, err := net.Dial("tcp", graphiteAddr)
+	if err != nil {
+		t.Fatalf("connection error: %v", err)
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(input))
+	if err != nil {
+		t.Fatalf("write error: %v", err)
+	}
+
+	resp, err := http.Get("http://" + path.Join(webAddr, "metrics"))
+	if err != nil {
+		t.Fatalf("get error: %v", err)
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read error: %v", err)
+	}
+	for _, s := range []string{"rspamd_actions_add_header 2", "rspamd_connections 1"} {
+		if !strings.Contains(string(b), s) {
+			t.Fatalf("Expected %q in %q – input: %q – time: %s", s, string(b), input, now)
+		}
+	}
+}

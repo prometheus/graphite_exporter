@@ -1,8 +1,4 @@
-## 0.7.0-rc2 / 2020-02-18
-
-* [BUGFIX] Fix bug around statsd mapper cache init ([#118](https://github.com/prometheus/graphite_exporter/pull/118))
-
-## 0.7.0-rc1 / 2020-01-21
+## 0.7.0 / 2020-02-28
 
 * [CHANGE] Update logging library and flags ([#109](https://github.com/prometheus/graphite_exporter/pull/109))
 * [CHANGE] Updated prometheus golang client and statsd mapper dependency. ([#113](https://github.com/prometheus/graphite_exporter/pull/113))

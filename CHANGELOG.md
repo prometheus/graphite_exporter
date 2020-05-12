@@ -1,3 +1,7 @@
+## 0.7.1 / 2020-05-12
+
+* [BUGFIX] Fix "superfluous response.WriteHeader call" through dependency update ([#125](https://github.com/prometheus/graphite_exporter/pull/125))
+
 ## 0.7.0 / 2020-02-28
 
 * [CHANGE] Update logging library and flags ([#109](https://github.com/prometheus/graphite_exporter/pull/109))

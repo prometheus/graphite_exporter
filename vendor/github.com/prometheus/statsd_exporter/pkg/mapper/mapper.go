@@ -18,12 +18,12 @@ import (
 	"io/ioutil"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
 	"github.com/prometheus/statsd_exporter/pkg/mapper/fsm"
 	yaml "gopkg.in/yaml.v2"
-	"time"
 )
 
 var (
@@ -57,21 +57,34 @@ type MetricMapper struct {
 }
 
 type MetricMapping struct {
-	Match           string `yaml:"match"`
-	Name            string `yaml:"name"`
-	nameFormatter   *fsm.TemplateFormatter
-	regex           *regexp.Regexp
-	Labels          prometheus.Labels `yaml:"labels"`
-	labelKeys       []string
-	labelFormatters []*fsm.TemplateFormatter
-	TimerType       TimerType         `yaml:"timer_type"`
-	Buckets         []float64         `yaml:"buckets"`
-	Quantiles       []metricObjective `yaml:"quantiles"`
-	MatchType       MatchType         `yaml:"match_type"`
-	HelpText        string            `yaml:"help"`
-	Action          ActionType        `yaml:"action"`
-	MatchMetricType MetricType        `yaml:"match_metric_type"`
-	Ttl             time.Duration     `yaml:"ttl"`
+	Match            string `yaml:"match"`
+	Name             string `yaml:"name"`
+	nameFormatter    *fsm.TemplateFormatter
+	regex            *regexp.Regexp
+	Labels           prometheus.Labels `yaml:"labels"`
+	labelKeys        []string
+	labelFormatters  []*fsm.TemplateFormatter
+	TimerType        TimerType         `yaml:"timer_type"`
+	LegacyBuckets    []float64         `yaml:"buckets"`
+	LegacyQuantiles  []metricObjective `yaml:"quantiles"`
+	MatchType        MatchType         `yaml:"match_type"`
+	HelpText         string            `yaml:"help"`
+	Action           ActionType        `yaml:"action"`
+	MatchMetricType  MetricType        `yaml:"match_metric_type"`
+	Ttl              time.Duration     `yaml:"ttl"`
+	SummaryOptions   *SummaryOptions   `yaml:"summary_options"`
+	HistogramOptions *HistogramOptions `yaml:"histogram_options"`
+}
+
+type SummaryOptions struct {
+	Quantiles  []metricObjective `yaml:"quantiles"`
+	MaxAge     time.Duration     `yaml:"max_age"`
+	AgeBuckets uint32            `yaml:"age_buckets"`
+	BufCap     uint32            `yaml:"buf_cap"`
+}
+
+type HistogramOptions struct {
+	Buckets []float64 `yaml:"buckets"`
 }
 
 type metricObjective struct {
@@ -85,7 +98,7 @@ var defaultQuantiles = []metricObjective{
 	{Quantile: 0.99, Error: 0.001},
 }
 
-func (m *MetricMapper) InitFromYAMLString(fileContents string, cacheSize int) error {
+func (m *MetricMapper) InitFromYAMLString(fileContents string, cacheSize int, options ...CacheOption) error {
 	var n MetricMapper
 
 	if err := yaml.Unmarshal([]byte(fileContents), &n); err != nil {
@@ -172,12 +185,56 @@ func (m *MetricMapper) InitFromYAMLString(fileContents string, cacheSize int) er
 			currentMapping.TimerType = n.Defaults.TimerType
 		}
 
-		if currentMapping.Buckets == nil || len(currentMapping.Buckets) == 0 {
-			currentMapping.Buckets = n.Defaults.Buckets
+		if currentMapping.LegacyQuantiles != nil &&
+			(currentMapping.SummaryOptions == nil || currentMapping.SummaryOptions.Quantiles != nil) {
+			log.Warn("using the top level quantiles is deprecated.  Please use quantiles in the summary_options hierarchy")
 		}
 
-		if currentMapping.Quantiles == nil || len(currentMapping.Quantiles) == 0 {
-			currentMapping.Quantiles = n.Defaults.Quantiles
+		if currentMapping.LegacyBuckets != nil &&
+			(currentMapping.HistogramOptions == nil || currentMapping.HistogramOptions.Buckets != nil) {
+			log.Warn("using the top level buckets is deprecated.  Please use buckets in the histogram_options hierarchy")
+		}
+
+		if currentMapping.SummaryOptions != nil &&
+			currentMapping.LegacyQuantiles != nil &&
+			currentMapping.SummaryOptions.Quantiles != nil {
+			return fmt.Errorf("cannot use quantiles in both the top level and summary options at the same time in %s", currentMapping.Match)
+		}
+
+		if currentMapping.HistogramOptions != nil &&
+			currentMapping.LegacyBuckets != nil &&
+			currentMapping.HistogramOptions.Buckets != nil {
+			return fmt.Errorf("cannot use buckets in both the top level and histogram options at the same time in %s", currentMapping.Match)
+		}
+
+		if currentMapping.TimerType == TimerTypeHistogram {
+			if currentMapping.SummaryOptions != nil {
+				return fmt.Errorf("cannot use histogram timer and summary options at the same time")
+			}
+			if currentMapping.HistogramOptions == nil {
+				currentMapping.HistogramOptions = &HistogramOptions{}
+			}
+			if currentMapping.LegacyBuckets != nil && len(currentMapping.LegacyBuckets) != 0 {
+				currentMapping.HistogramOptions.Buckets = currentMapping.LegacyBuckets
+			}
+			if currentMapping.HistogramOptions.Buckets == nil || len(currentMapping.HistogramOptions.Buckets) == 0 {
+				currentMapping.HistogramOptions.Buckets = n.Defaults.Buckets
+			}
+		}
+
+		if currentMapping.TimerType == TimerTypeSummary {
+			if currentMapping.HistogramOptions != nil {
+				return fmt.Errorf("cannot use summary timer and histogram options at the same time")
+			}
+			if currentMapping.SummaryOptions == nil {
+				currentMapping.SummaryOptions = &SummaryOptions{}
+			}
+			if currentMapping.LegacyQuantiles != nil && len(currentMapping.LegacyQuantiles) != 0 {
+				currentMapping.SummaryOptions.Quantiles = currentMapping.LegacyQuantiles
+			}
+			if currentMapping.SummaryOptions.Quantiles == nil || len(currentMapping.SummaryOptions.Quantiles) == 0 {
+				currentMapping.SummaryOptions.Quantiles = n.Defaults.Quantiles
+			}
 		}
 
 		if currentMapping.Ttl == 0 && n.Defaults.Ttl > 0 {
@@ -191,7 +248,7 @@ func (m *MetricMapper) InitFromYAMLString(fileContents string, cacheSize int) er
 
 	m.Defaults = n.Defaults
 	m.Mappings = n.Mappings
-	m.InitCache(cacheSize)
+	m.InitCache(cacheSize, options...)
 
 	if n.doFSM {
 		var mappings []string
@@ -213,20 +270,39 @@ func (m *MetricMapper) InitFromYAMLString(fileContents string, cacheSize int) er
 	return nil
 }
 
-func (m *MetricMapper) InitFromFile(fileName string, cacheSize int) error {
+func (m *MetricMapper) InitFromFile(fileName string, cacheSize int, options ...CacheOption) error {
 	mappingStr, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return err
 	}
 
-	return m.InitFromYAMLString(string(mappingStr), cacheSize)
+	return m.InitFromYAMLString(string(mappingStr), cacheSize, options...)
 }
 
-func (m *MetricMapper) InitCache(cacheSize int) {
+func (m *MetricMapper) InitCache(cacheSize int, options ...CacheOption) {
 	if cacheSize == 0 {
 		m.cache = NewMetricMapperNoopCache()
 	} else {
-		cache, err := NewMetricMapperCache(cacheSize)
+		o := cacheOptions{
+			cacheType: "lru",
+		}
+		for _, f := range options {
+			f(&o)
+		}
+
+		var (
+			cache MetricMapperCache
+			err   error
+		)
+		switch o.cacheType {
+		case "lru":
+			cache, err = NewMetricMapperCache(cacheSize)
+		case "random":
+			cache, err = NewMetricMapperRRCache(cacheSize)
+		default:
+			err = fmt.Errorf("unsupported cache type %q", o.cacheType)
+		}
+
 		if err != nil {
 			log.Fatalf("Unable to setup metric cache. Caused by: %s", err)
 		}

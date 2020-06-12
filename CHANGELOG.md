@@ -1,3 +1,12 @@
+## 0.8.0 / 2020-06-12
+
+* [CHANGE] Update metric mapper and other dependencies ([#127](https://github.com/prometheus/graphite_exporter/pull/127))
+
+This brings the metric mapper to parity with [statsd_exporter 0.16.0](https://github.com/prometheus/statsd_exporter/blob/master/CHANGELOG.md#0160--2020-05-29).
+See the statsd exporter changelog for the detailed changes.
+Notably, we now support a random-replacement mapping cache.
+The changes for the timer type configuration do not affect this exporter as Graphite only supports gauge-type metrics.
+
 ## 0.7.1 / 2020-05-12
 
 * [BUGFIX] Fix "superfluous response.WriteHeader call" through dependency update ([#125](https://github.com/prometheus/graphite_exporter/pull/125))

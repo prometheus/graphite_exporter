@@ -48,6 +48,7 @@ var (
 	sampleExpiry    = kingpin.Flag("graphite.sample-expiry", "How long a sample is valid for.").Default("5m").Duration()
 	strictMatch     = kingpin.Flag("graphite.mapping-strict-match", "Only store metrics that match the mapping configuration.").Bool()
 	cacheSize       = kingpin.Flag("graphite.cache-size", "Maximum size of your metric mapping cache. Relies on least recently used replacement policy if max size is reached.").Default("1000").Int()
+	cacheType       = kingpin.Flag("graphite.cache-type", "Metric mapping cache type. Valid options are \"lru\" and \"random\"").Default("lru").Enum("lru", "random")
 	dumpFSMPath     = kingpin.Flag("debug.dump-fsm", "The path to dump internal FSM generated for glob matching as Dot file.").Default("").String()
 
 	lastProcessed = prometheus.NewGauge(
@@ -81,8 +82,8 @@ func (s graphiteSample) String() string {
 
 type metricMapper interface {
 	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
-	InitFromFile(string, int) error
-	InitCache(cacheSize int)
+	InitFromFile(string, int, ...mapper.CacheOption) error
+	InitCache(int, ...mapper.CacheOption)
 }
 
 type graphiteCollector struct {
@@ -266,14 +267,16 @@ func main() {
 	prometheus.MustRegister(c)
 
 	c.mapper = &mapper.MetricMapper{}
+	cacheOption := mapper.WithCacheType(*cacheType)
+
 	if *mappingConfig != "" {
-		err := c.mapper.InitFromFile(*mappingConfig, *cacheSize)
+		err := c.mapper.InitFromFile(*mappingConfig, *cacheSize, cacheOption)
 		if err != nil {
 			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
 			os.Exit(1)
 		}
 	} else {
-		c.mapper.InitCache(0)
+		c.mapper.InitCache(*cacheSize, cacheOption)
 	}
 
 	if *dumpFSMPath != "" {

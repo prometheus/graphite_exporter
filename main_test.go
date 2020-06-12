@@ -38,10 +38,10 @@ func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType)
 
 }
 
-func (m *mockMapper) InitFromFile(string, int) error {
+func (m *mockMapper) InitFromFile(string, int, ...mapper.CacheOption) error {
 	return nil
 }
-func (m *mockMapper) InitCache(int) {
+func (m *mockMapper) InitCache(int, ...mapper.CacheOption) {
 
 }
 func TestProcessLine(t *testing.T) {

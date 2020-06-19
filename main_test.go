@@ -21,6 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/prometheus/graphite_exporter/pkg/line"
 )
 
 type mockMapper struct {
@@ -31,11 +33,9 @@ type mockMapper struct {
 }
 
 func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
-
 	mapping := mapper.MetricMapping{Name: m.name, Action: m.action}
 
 	return &mapping, m.labels, m.present
-
 }
 
 func (m *mockMapper) InitFromFile(string, int, ...mapper.CacheOption) error {
@@ -45,44 +45,7 @@ func (m *mockMapper) InitCache(int, ...mapper.CacheOption) {
 
 }
 
-func TestParseNameAndTags(t *testing.T) {
-	type testCase struct {
-		line       string
-		parsedName string
-		labels     prometheus.Labels
-		willFail   bool
-	}
-
-	testCases := []testCase{
-		{
-			line:       "my_simple_metric_with_tags;tag1=value1;tag2=value2",
-			parsedName: "my_simple_metric_with_tags",
-			labels: prometheus.Labels{
-				"tag1": "value1",
-				"tag2": "value2",
-			},
-		},
-		{
-			line:       "my_simple_metric_with_bad_tags;tag1=value1;tag2",
-			parsedName: "my_simple_metric_with_bad_tags;tag1=value1;tag2",
-			labels:     prometheus.Labels{},
-			willFail:   true,
-		},
-	}
-
-	for _, testCase := range testCases {
-		labels := prometheus.Labels{}
-		n, err := parseMetricNameAndTags(testCase.line, labels)
-		if !testCase.willFail {
-			assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
-		}
-		assert.Equal(t, testCase.parsedName, n)
-		assert.Equal(t, testCase.labels, labels)
-	}
-}
-
 func TestProcessLine(t *testing.T) {
-
 	type testCase struct {
 		line           string
 		name           string
@@ -184,7 +147,6 @@ func TestProcessLine(t *testing.T) {
 	c := newGraphiteCollector(log.NewNopLogger())
 
 	for _, testCase := range testCases {
-
 		if testCase.mappingPresent {
 			c.mapper = &mockMapper{
 				name:    testCase.name,
@@ -199,14 +161,15 @@ func TestProcessLine(t *testing.T) {
 		}
 
 		c.strictMatch = testCase.strict
-		c.processLine(testCase.line)
-
+		line.ProcessLine(testCase.line, c.mapper, c.sampleCh, c.strictMatch, tagErrors, lastProcessed, invalidMetrics, c.logger)
 	}
 
 	c.sampleCh <- nil
+
 	for _, k := range testCases {
 		originalName := strings.Split(k.line, " ")[0]
 		sample := c.samples[originalName]
+
 		if k.willFail {
 			assert.Nil(t, sample, "Found %s", k.name)
 		} else {

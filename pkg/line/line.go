@@ -122,45 +122,36 @@ func ProcessLine(line string, metricmapper metricmapper.MetricMapper, sampleCh c
 
 	originalName := parts[0]
 
-	var name string
-	var err error
+	labels := make(prometheus.Labels)
+	name, err := parseMetricNameAndTags(originalName, labels, tagErrors)
+	if err != nil {
+		level.Info(logger).Log("msg", "Invalid tags", "line", line)
+		return
+	}
 
-	mapping, labels, mappingPresent := metricmapper.GetMapping(originalName, mapper.MetricTypeGauge)
+	// check to ensure the same tags are present
+	if validKeys := metricNameKeysIndex.checkNameAndKeys(name, labels); !validKeys {
+		level.Info(logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
+		invalidMetrics.Inc()
+
+		return
+	}
+
+	mapping, mlabels, mappingPresent := metricmapper.GetMapping(name, mapper.MetricTypeGauge)
 
 	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && strictMatch) {
 		return
 	}
 
 	if mappingPresent {
-		parsedLabels := make(prometheus.Labels)
-
-		if _, err = parseMetricNameAndTags(originalName, parsedLabels, tagErrors); err != nil {
-			level.Info(logger).Log("msg", "Invalid tags", "line", line)
-			return
-		}
-
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
-		// check to ensure the same tags are present
-		if validKeys := metricNameKeysIndex.checkNameAndKeys(name, parsedLabels); !validKeys {
-			level.Info(logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
-			invalidMetrics.Inc()
 
-			return
+		// append labels from the mapping to those parsed, with mapping labels overriding
+		for k, v := range mlabels {
+			labels[k] = v
 		}
 	} else {
-		labels = make(prometheus.Labels)
-		name, err = parseMetricNameAndTags(originalName, labels, tagErrors)
-		if err != nil {
-			level.Info(logger).Log("msg", "Invalid tags", "line", line)
-			return
-		}
 		name = invalidMetricChars.ReplaceAllString(name, "_")
-		// check to ensure the same tags are present
-		if validKeys := metricNameKeysIndex.checkNameAndKeys(name, labels); !validKeys {
-			level.Info(logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
-			invalidMetrics.Inc()
-			return
-		}
 	}
 
 	value, err := strconv.ParseFloat(parts[1], 64)

@@ -89,7 +89,7 @@ func TestProcessLine(t *testing.T) {
 		{
 			line:          "my.nomap.metric.novalue 9001 ",
 			name:          "my_nomap_metric_novalue",
-			mappingLabels: nil,
+			mappingLabels: prometheus.Labels{},
 			value:         float64(9001),
 			willFail:      true,
 		},
@@ -104,6 +104,7 @@ func TestProcessLine(t *testing.T) {
 			line:           "my.mapped.strict.metric 55 1534620625",
 			name:           "my_mapped_strict_metric",
 			value:          float64(55),
+			mappingLabels:  prometheus.Labels{},
 			mappingPresent: true,
 			willFail:       false,
 			strict:         true,

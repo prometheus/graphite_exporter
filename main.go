@@ -17,13 +17,10 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
-	"sync"
-	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -35,9 +32,7 @@ import (
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/prometheus/graphite_exporter/pkg/graphitesample"
-	"github.com/prometheus/graphite_exporter/pkg/line"
-	"github.com/prometheus/graphite_exporter/pkg/metricmapper"
+	"github.com/prometheus/graphite_exporter/pkg/collector"
 )
 
 var (
@@ -76,108 +71,6 @@ var (
 		},
 	)
 )
-
-type graphiteCollector struct {
-	samples     map[string]*graphitesample.GraphiteSample
-	mu          *sync.Mutex
-	mapper      metricmapper.MetricMapper
-	sampleCh    chan *graphitesample.GraphiteSample
-	lineCh      chan string
-	strictMatch bool
-	logger      log.Logger
-}
-
-func newGraphiteCollector(logger log.Logger) *graphiteCollector {
-	c := &graphiteCollector{
-		sampleCh:    make(chan *graphitesample.GraphiteSample),
-		lineCh:      make(chan string),
-		mu:          &sync.Mutex{},
-		samples:     map[string]*graphitesample.GraphiteSample{},
-		strictMatch: *strictMatch,
-		logger:      logger,
-	}
-
-	go c.processSamples()
-	go c.processLines()
-
-	return c
-}
-
-func (c *graphiteCollector) processReader(reader io.Reader) {
-	lineScanner := bufio.NewScanner(reader)
-
-	for {
-		if ok := lineScanner.Scan(); !ok {
-			break
-		}
-		c.lineCh <- lineScanner.Text()
-	}
-}
-
-func (c *graphiteCollector) processLines() {
-	for l := range c.lineCh {
-		line.ProcessLine(l, c.mapper, c.sampleCh, c.strictMatch, tagErrors, lastProcessed, invalidMetrics, c.logger)
-	}
-}
-
-func (c *graphiteCollector) processSamples() {
-	ticker := time.NewTicker(time.Minute).C
-
-	for {
-		select {
-		case sample, ok := <-c.sampleCh:
-			if sample == nil || !ok {
-				return
-			}
-
-			c.mu.Lock()
-			c.samples[sample.OriginalName] = sample
-			c.mu.Unlock()
-		case <-ticker:
-			// Garbage collect expired samples.
-			ageLimit := time.Now().Add(-*sampleExpiry)
-
-			c.mu.Lock()
-			for k, sample := range c.samples {
-				if ageLimit.After(sample.Timestamp) {
-					delete(c.samples, k)
-				}
-			}
-			c.mu.Unlock()
-		}
-	}
-}
-
-// Collect implements prometheus.Collector.
-func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
-	ch <- lastProcessed
-
-	c.mu.Lock()
-	samples := make([]*graphitesample.GraphiteSample, 0, len(c.samples))
-
-	for _, sample := range c.samples {
-		samples = append(samples, sample)
-	}
-	c.mu.Unlock()
-
-	ageLimit := time.Now().Add(-*sampleExpiry)
-
-	for _, sample := range samples {
-		if ageLimit.After(sample.Timestamp) {
-			continue
-		}
-		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc(sample.Name, sample.Help, []string{}, sample.Labels),
-			sample.Type,
-			sample.Value,
-		)
-	}
-}
-
-// Describe implements prometheus.Collector.
-func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- lastProcessed.Desc()
-}
 
 func init() {
 	prometheus.MustRegister(version.NewCollector("graphite_exporter"))
@@ -223,24 +116,24 @@ func main() {
 
 	http.Handle(*metricsPath, promhttp.Handler())
 
-	c := newGraphiteCollector(logger)
+	c := collector.NewGraphiteCollector(logger, *strictMatch, *sampleExpiry, tagErrors, lastProcessed, sampleExpiryMetric, invalidMetrics)
 	prometheus.MustRegister(c)
 
-	c.mapper = &mapper.MetricMapper{}
+	c.Mapper = &mapper.MetricMapper{}
 	cacheOption := mapper.WithCacheType(*cacheType)
 
 	if *mappingConfig != "" {
-		err := c.mapper.InitFromFile(*mappingConfig, *cacheSize, cacheOption)
+		err := c.Mapper.InitFromFile(*mappingConfig, *cacheSize, cacheOption)
 		if err != nil {
 			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
 			os.Exit(1)
 		}
 	} else {
-		c.mapper.InitCache(*cacheSize, cacheOption)
+		c.Mapper.InitCache(*cacheSize, cacheOption)
 	}
 
 	if *dumpFSMPath != "" {
-		err := dumpFSM(c.mapper.(*mapper.MetricMapper), *dumpFSMPath, logger)
+		err := dumpFSM(c.Mapper.(*mapper.MetricMapper), *dumpFSMPath, logger)
 		if err != nil {
 			level.Error(logger).Log("msg", "Error dumping FSM", "err", err)
 			os.Exit(1)
@@ -263,7 +156,7 @@ func main() {
 
 			go func() {
 				defer conn.Close()
-				c.processReader(conn)
+				c.ProcessReader(conn)
 			}()
 		}
 	}()
@@ -292,7 +185,7 @@ func main() {
 				continue
 			}
 
-			go c.processReader(bytes.NewReader(buf[0:chars]))
+			go c.ProcessReader(bytes.NewReader(buf[0:chars]))
 		}
 	}()
 

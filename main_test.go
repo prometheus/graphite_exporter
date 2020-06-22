@@ -16,12 +16,14 @@ package main
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/prometheus/graphite_exporter/pkg/collector"
 	"github.com/prometheus/graphite_exporter/pkg/line"
 )
 
@@ -145,31 +147,32 @@ func TestProcessLine(t *testing.T) {
 		},
 	}
 
-	c := newGraphiteCollector(log.NewNopLogger())
+	// func NewGraphiteCollector(logger log.Logger, strictMatch bool, sampleExpiry time.Duration, tagErrors prometheus.Counter, lastProcessed prometheus.Gauge, sampleExpiryMetric prometheus.Gauge, invalidMetrics prometheus.Counter) *graphiteCollector {
+	c := collector.NewGraphiteCollector(log.NewNopLogger(), false, 5*time.Minute, tagErrors, lastProcessed, sampleExpiryMetric, invalidMetrics)
 
 	for _, testCase := range testCases {
 		if testCase.mappingPresent {
-			c.mapper = &mockMapper{
+			c.Mapper = &mockMapper{
 				name:    testCase.name,
 				labels:  testCase.mappingLabels,
 				action:  testCase.action,
 				present: testCase.mappingPresent,
 			}
 		} else {
-			c.mapper = &mockMapper{
+			c.Mapper = &mockMapper{
 				present: testCase.mappingPresent,
 			}
 		}
 
-		c.strictMatch = testCase.strict
-		line.ProcessLine(testCase.line, c.mapper, c.sampleCh, c.strictMatch, tagErrors, lastProcessed, invalidMetrics, c.logger)
+		c.StrictMatch = testCase.strict
+		line.ProcessLine(testCase.line, c.Mapper, c.SampleCh, c.StrictMatch, tagErrors, lastProcessed, invalidMetrics, c.Logger)
 	}
 
-	c.sampleCh <- nil
+	c.SampleCh <- nil
 
 	for _, k := range testCases {
 		originalName := strings.Split(k.line, " ")[0]
-		sample := c.samples[originalName]
+		sample := c.Samples[originalName]
 
 		if k.willFail {
 			assert.Nil(t, sample, "Found %s", k.name)

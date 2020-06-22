@@ -83,6 +83,8 @@ func TestIssue90(t *testing.T) {
 		conn.Close()
 	}
 
+	time.Sleep(5 * time.Second)
+
 	resp, err := http.Get("http://" + path.Join(webAddr, "metrics"))
 	if err != nil {
 		t.Fatalf("get error: %v", err)

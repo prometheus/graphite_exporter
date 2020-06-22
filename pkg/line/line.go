@@ -110,7 +110,7 @@ func parseMetricNameAndTags(name string, labels prometheus.Labels, tagErrors pro
 }
 
 // ProcessLine takes a graphite metric line as a string, processes it into a GraphiteSample, and sends it to the sample channel
-func ProcessLine(line string, metricmapper metricmapper.MetricMapper, sampleCh chan *graphitesample.GraphiteSample, strictMatch bool, tagErrors prometheus.Counter, lastProcessed prometheus.Gauge, invalidMetrics prometheus.Counter, logger log.Logger) {
+func ProcessLine(line string, metricmapper metricmapper.MetricMapper, sampleCh chan<- *graphitesample.GraphiteSample, strictMatch bool, tagErrors prometheus.Counter, lastProcessed prometheus.Gauge, invalidMetrics prometheus.Counter, logger log.Logger) {
 	line = strings.TrimSpace(line)
 	level.Debug(logger).Log("msg", "Incoming line", "line", line)
 	parts := strings.Split(line, " ")

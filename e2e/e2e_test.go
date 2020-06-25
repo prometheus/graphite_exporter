@@ -46,7 +46,7 @@ func TestIssue61(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}
@@ -92,6 +92,8 @@ rspamd.spam_count 3 NOW`
 	if err != nil {
 		t.Fatalf("write error: %v", err)
 	}
+
+	time.Sleep(5 * time.Second)
 
 	resp, err := http.Get("http://" + path.Join(webAddr, "metrics"))
 	if err != nil {
@@ -127,7 +129,7 @@ func TestIssue111(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 20; i++ {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}
@@ -173,6 +175,8 @@ rspamd.spam_count 3 NOW`
 	if err != nil {
 		t.Fatalf("write error: %v", err)
 	}
+
+	time.Sleep(5 * time.Second)
 
 	resp, err := http.Get("http://" + path.Join(webAddr, "metrics"))
 	if err != nil {

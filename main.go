@@ -24,6 +24,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -63,13 +64,24 @@ var (
 			Help: "How long in seconds a metric sample is valid for.",
 		},
 	)
-	invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
+	tagParseFailures = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "graphite_tag_parse_failures",
+			Help: "Total count of samples with invalid tags",
+		})
+	invalidMetrics = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "graphite_invalid_metrics",
+			Help: "Total count of metrics dropped due to mismatched label keys",
+		})
+	invalidMetricChars  = regexp.MustCompile("[^a-zA-Z0-9_:]")
+	metricNameKeysIndex = newMetricNameAndKeys()
 )
 
 type graphiteSample struct {
 	OriginalName string
 	Name         string
-	Labels       map[string]string
+	Labels       prometheus.Labels
 	Help         string
 	Value        float64
 	Type         prometheus.ValueType
@@ -84,6 +96,41 @@ type metricMapper interface {
 	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
 	InitFromFile(string, int, ...mapper.CacheOption) error
 	InitCache(int, ...mapper.CacheOption)
+}
+
+// metricNameAndKeys is a cache of metric names and the label keys previously used
+type metricNameAndKeys struct {
+	mtx   sync.Mutex
+	cache map[string]string
+}
+
+func newMetricNameAndKeys() *metricNameAndKeys {
+	x := metricNameAndKeys{
+		cache: make(map[string]string),
+	}
+	return &x
+}
+
+func keysFromLabels(labels prometheus.Labels) string {
+	labelKeys := make([]string, len(labels))
+	for k, _ := range labels {
+		labelKeys = append(labelKeys, k)
+	}
+	sort.Strings(labelKeys)
+	return strings.Join(labelKeys, ",")
+}
+
+// checkNameAndKeys returns true if metric has the same label keys or is new, false if not
+func (c *metricNameAndKeys) checkNameAndKeys(name string, labels prometheus.Labels) bool {
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
+	providedKeys := keysFromLabels(labels)
+	if keys, found := c.cache[name]; found {
+		return keys == providedKeys
+	}
+
+	c.cache[name] = providedKeys
+	return true
 }
 
 type graphiteCollector struct {
@@ -126,6 +173,37 @@ func (c *graphiteCollector) processLines() {
 	}
 }
 
+func parseMetricNameAndTags(name string, labels prometheus.Labels) (string, error) {
+	if strings.ContainsRune(name, ';') {
+		// name contains tags - parse tags and add to labels
+		if strings.Count(name, ";") != strings.Count(name, "=") {
+			tagParseFailures.Inc()
+			return name, fmt.Errorf("error parsing tags on %s", name)
+		}
+
+		parts := strings.Split(name, ";")
+		parsedName := parts[0]
+		tags := parts[1:]
+
+		for _, tag := range tags {
+			kv := strings.SplitN(tag, "=", 2)
+			if len(kv) != 2 {
+				// we may have added bad labels already...
+				tagParseFailures.Inc()
+				return name, fmt.Errorf("error parsing tags on %s", name)
+			}
+
+			k := kv[0]
+			v := kv[1]
+			labels[k] = v
+		}
+
+		return parsedName, nil
+	}
+
+	return name, nil
+}
+
 func (c *graphiteCollector) processLine(line string) {
 	line = strings.TrimSpace(line)
 	level.Debug(c.logger).Log("msg", "Incoming line", "line", line)
@@ -136,16 +214,42 @@ func (c *graphiteCollector) processLine(line string) {
 	}
 	originalName := parts[0]
 	var name string
-	mapping, labels, present := c.mapper.GetMapping(originalName, mapper.MetricTypeGauge)
+	var err error
+	mapping, labels, mappingPresent := c.mapper.GetMapping(originalName, mapper.MetricTypeGauge)
 
-	if (present && mapping.Action == mapper.ActionTypeDrop) || (!present && c.strictMatch) {
+	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && c.strictMatch) {
 		return
 	}
 
-	if present {
+	if mappingPresent {
+		parsedLabels := make(prometheus.Labels)
+		_, err = parseMetricNameAndTags(originalName, parsedLabels)
+		if err != nil {
+			level.Info(c.logger).Log("msg", "Invalid tags", "line", line)
+			return
+		}
+
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
+		// check to ensure the same tags are present
+		if validKeys := metricNameKeysIndex.checkNameAndKeys(name, parsedLabels); !validKeys {
+			level.Info(c.logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
+			invalidMetrics.Inc()
+			return
+		}
 	} else {
-		name = invalidMetricChars.ReplaceAllString(originalName, "_")
+		labels = make(prometheus.Labels)
+		name, err = parseMetricNameAndTags(originalName, labels)
+		if err != nil {
+			level.Info(c.logger).Log("msg", "Invalid tags", "line", line)
+			return
+		}
+		name = invalidMetricChars.ReplaceAllString(name, "_")
+		// check to ensure the same tags are present
+		if validKeys := metricNameKeysIndex.checkNameAndKeys(name, labels); !validKeys {
+			level.Info(c.logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
+			invalidMetrics.Inc()
+			return
+		}
 	}
 
 	value, err := strconv.ParseFloat(parts[1], 64)
@@ -257,6 +361,8 @@ func main() {
 	logger := promlog.New(promlogConfig)
 
 	prometheus.MustRegister(sampleExpiryMetric)
+	prometheus.MustRegister(tagParseFailures)
+	prometheus.MustRegister(invalidMetrics)
 	sampleExpiryMetric.Set(sampleExpiry.Seconds())
 
 	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info())

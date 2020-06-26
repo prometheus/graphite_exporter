@@ -44,74 +44,140 @@ func (m *mockMapper) InitFromFile(string, int, ...mapper.CacheOption) error {
 func (m *mockMapper) InitCache(int, ...mapper.CacheOption) {
 
 }
+
+func TestParseNameAndTags(t *testing.T) {
+	type testCase struct {
+		line       string
+		parsedName string
+		labels     prometheus.Labels
+		willFail   bool
+	}
+
+	testCases := []testCase{
+		{
+			line:       "my_simple_metric_with_tags;tag1=value1;tag2=value2",
+			parsedName: "my_simple_metric_with_tags",
+			labels: prometheus.Labels{
+				"tag1": "value1",
+				"tag2": "value2",
+			},
+		},
+		{
+			line:       "my_simple_metric_with_bad_tags;tag1=value1;tag2",
+			parsedName: "my_simple_metric_with_bad_tags;tag1=value1;tag2",
+			labels:     prometheus.Labels{},
+			willFail:   true,
+		},
+	}
+
+	for _, testCase := range testCases {
+		labels := prometheus.Labels{}
+		n, err := parseMetricNameAndTags(testCase.line, labels)
+		if !testCase.willFail {
+			assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
+		}
+		assert.Equal(t, testCase.parsedName, n)
+		assert.Equal(t, testCase.labels, labels)
+	}
+}
+
 func TestProcessLine(t *testing.T) {
 
 	type testCase struct {
-		line     string
-		name     string
-		labels   map[string]string
-		value    float64
-		present  bool
-		willFail bool
-		action   mapper.ActionType
-		strict   bool
+		line           string
+		name           string
+		mappingLabels  prometheus.Labels
+		parsedLabels   prometheus.Labels
+		value          float64
+		mappingPresent bool
+		willFail       bool
+		action         mapper.ActionType
+		strict         bool
 	}
 
 	testCases := []testCase{
 		{
 			line: "my.simple.metric 9001 1534620625",
 			name: "my_simple_metric",
-			labels: map[string]string{
+			mappingLabels: prometheus.Labels{
 				"foo":  "bar",
 				"zip":  "zot",
 				"name": "alabel",
 			},
-			present: true,
-			value:   float64(9001),
+			mappingPresent: true,
+			value:          float64(9001),
 		},
 		{
 			line: "my.simple.metric.baz 9002 1534620625",
 			name: "my_simple_metric",
-			labels: map[string]string{
+			mappingLabels: prometheus.Labels{
 				"baz": "bat",
 			},
-			present: true,
-			value:   float64(9002),
+			mappingPresent: true,
+			value:          float64(9002),
 		},
 		{
-			line:    "my.nomap.metric 9001 1534620625",
-			name:    "my_nomap_metric",
-			value:   float64(9001),
-			present: false,
+			line:           "my.nomap.metric 9001 1534620625",
+			name:           "my_nomap_metric",
+			value:          float64(9001),
+			parsedLabels:   prometheus.Labels{},
+			mappingPresent: false,
 		},
 		{
-			line:     "my.nomap.metric.novalue 9001 ",
-			name:     "my_nomap_metric_novalue",
-			labels:   nil,
-			value:    float64(9001),
+			line:          "my.nomap.metric.novalue 9001 ",
+			name:          "my_nomap_metric_novalue",
+			mappingLabels: nil,
+			value:         float64(9001),
+			willFail:      true,
+		},
+		{
+			line:           "my.mapped.metric.drop 55 1534620625",
+			name:           "my_mapped_metric_drop",
+			mappingPresent: true,
+			willFail:       true,
+			action:         mapper.ActionTypeDrop,
+		},
+		{
+			line:           "my.mapped.strict.metric 55 1534620625",
+			name:           "my_mapped_strict_metric",
+			value:          float64(55),
+			mappingPresent: true,
+			willFail:       false,
+			strict:         true,
+		},
+		{
+			line:           "my.mapped.strict.metric.drop 55 1534620625",
+			name:           "my_mapped_strict_metric_drop",
+			mappingPresent: false,
+			willFail:       true,
+			strict:         true,
+		},
+		{
+			line: "my.simple.metric.with.tags;tag1=value1;tag2=value2 9002 1534620625",
+			name: "my_simple_metric_with_tags",
+			parsedLabels: prometheus.Labels{
+				"tag1": "value1",
+				"tag2": "value2",
+			},
+			mappingPresent: false,
+			value:          float64(9002),
+		},
+		{
+			// same tags, different values, should parse
+			line: "my.simple.metric.with.tags;tag1=value3;tag2=value4 9002 1534620625",
+			name: "my_simple_metric_with_tags",
+			parsedLabels: prometheus.Labels{
+				"tag1": "value3",
+				"tag2": "value4",
+			},
+			mappingPresent: false,
+			value:          float64(9002),
+		},
+		{
+			// new tags other than previously used, should drop
+			line:     "my.simple.metric.with.tags;tag1=value1;tag3=value2 9002 1534620625",
+			name:     "my_simple_metric_with_tags",
 			willFail: true,
-		},
-		{
-			line:     "my.mapped.metric.drop 55 1534620625",
-			name:     "my_mapped_metric_drop",
-			present:  true,
-			willFail: true,
-			action:   mapper.ActionTypeDrop,
-		},
-		{
-			line:     "my.mapped.strict.metric 55 1534620625",
-			name:     "my_mapped_strict_metric",
-			value:    float64(55),
-			present:  true,
-			willFail: false,
-			strict:   true,
-		},
-		{
-			line:     "my.mapped.strict.metric.drop 55 1534620625",
-			name:     "my_mapped_strict_metric_drop",
-			present:  false,
-			willFail: true,
-			strict:   true,
 		},
 	}
 
@@ -119,16 +185,16 @@ func TestProcessLine(t *testing.T) {
 
 	for _, testCase := range testCases {
 
-		if testCase.present {
+		if testCase.mappingPresent {
 			c.mapper = &mockMapper{
 				name:    testCase.name,
-				labels:  testCase.labels,
+				labels:  testCase.mappingLabels,
 				action:  testCase.action,
-				present: testCase.present,
+				present: testCase.mappingPresent,
 			}
 		} else {
 			c.mapper = &mockMapper{
-				present: testCase.present,
+				present: testCase.mappingPresent,
 			}
 		}
 
@@ -146,7 +212,11 @@ func TestProcessLine(t *testing.T) {
 		} else {
 			if assert.NotNil(t, sample, "Missing %s", k.name) {
 				assert.Equal(t, k.name, sample.Name)
-				assert.Equal(t, k.labels, sample.Labels)
+				if k.mappingPresent {
+					assert.Equal(t, k.mappingLabels, sample.Labels)
+				} else {
+					assert.Equal(t, k.parsedLabels, sample.Labels)
+				}
 				assert.Equal(t, k.value, sample.Value)
 			}
 		}

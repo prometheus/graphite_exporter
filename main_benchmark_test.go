@@ -29,10 +29,10 @@ func benchmarkProcessLine(times int, b *testing.B) {
 	now := time.Now()
 
 	rawInput := `rspamd.actions.add_header 2 NOW
-rspamd.actions.greylist 0 NOW
-rspamd.actions.no_action 24 NOW
-rspamd.actions.reject 1 NOW
-rspamd.actions.rewrite_subject 0 NOW
+rspamd.actions;action=greylist 0 NOW
+rspamd.actions;action=no_action 24 NOW
+rspamd.actions;action=reject 1 NOW
+rspamd.actions;action=rewrite_subject 0 NOW
 rspamd.actions.soft_reject 0 NOW
 rspamd.bytes_allocated 4165268944 NOW
 rspamd.chunks_allocated 4294966730 NOW

@@ -174,34 +174,27 @@ func (c *graphiteCollector) processLines() {
 }
 
 func parseMetricNameAndTags(name string, labels prometheus.Labels) (string, error) {
-	if strings.ContainsRune(name, ';') {
-		// name contains tags - parse tags and add to labels
-		if strings.Count(name, ";") != strings.Count(name, "=") {
+	var err error
+
+	parts := strings.Split(name, ";")
+	parsedName := parts[0]
+
+	tags := parts[1:]
+	for _, tag := range tags {
+		kv := strings.SplitN(tag, "=", 2)
+		if len(kv) != 2 {
+			// don't add this tag, continue processing tags but return an error
 			tagParseFailures.Inc()
-			return name, fmt.Errorf("error parsing tags on %s", name)
+			err = fmt.Errorf("error parsing tag %s", tag)
+			continue
 		}
 
-		parts := strings.Split(name, ";")
-		parsedName := parts[0]
-		tags := parts[1:]
-
-		for _, tag := range tags {
-			kv := strings.SplitN(tag, "=", 2)
-			if len(kv) != 2 {
-				// we may have added bad labels already...
-				tagParseFailures.Inc()
-				return name, fmt.Errorf("error parsing tags on %s", name)
-			}
-
-			k := kv[0]
-			v := kv[1]
-			labels[k] = v
-		}
-
-		return parsedName, nil
+		k := kv[0]
+		v := kv[1]
+		labels[k] = v
 	}
 
-	return name, nil
+	return parsedName, err
 }
 
 func (c *graphiteCollector) processLine(line string) {
@@ -225,8 +218,7 @@ func (c *graphiteCollector) processLine(line string) {
 		parsedLabels := make(prometheus.Labels)
 		_, err = parseMetricNameAndTags(originalName, parsedLabels)
 		if err != nil {
-			level.Info(c.logger).Log("msg", "Invalid tags", "line", line)
-			return
+			level.Info(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
 		}
 
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
@@ -240,8 +232,7 @@ func (c *graphiteCollector) processLine(line string) {
 		labels = make(prometheus.Labels)
 		name, err = parseMetricNameAndTags(originalName, labels)
 		if err != nil {
-			level.Info(c.logger).Log("msg", "Invalid tags", "line", line)
-			return
+			level.Info(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
 		}
 		name = invalidMetricChars.ReplaceAllString(name, "_")
 		// check to ensure the same tags are present

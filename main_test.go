@@ -50,7 +50,7 @@ func TestParseNameAndTags(t *testing.T) {
 		line       string
 		parsedName string
 		labels     prometheus.Labels
-		willFail   bool
+		willError  bool
 	}
 
 	testCases := []testCase{
@@ -63,17 +63,28 @@ func TestParseNameAndTags(t *testing.T) {
 			},
 		},
 		{
-			line:       "my_simple_metric_with_bad_tags;tag1=value1;tag2",
-			parsedName: "my_simple_metric_with_bad_tags;tag1=value1;tag2",
-			labels:     prometheus.Labels{},
-			willFail:   true,
+			line:       "my_simple_metric_with_bad_tags;tag1=value3;tag2",
+			parsedName: "my_simple_metric_with_bad_tags",
+			labels:     prometheus.Labels{
+				"tag1": "value3",
+			},
+			willError: true,
+		},
+		{
+			line:       "my_simple_metric_with_bad_tags;tag1=value3;tag2;tag3=value4",
+			parsedName: "my_simple_metric_with_bad_tags",
+			labels:     prometheus.Labels{
+				"tag1": "value3",
+				"tag3": "value4",
+			},
+			willError: true,
 		},
 	}
 
 	for _, testCase := range testCases {
 		labels := prometheus.Labels{}
 		n, err := parseMetricNameAndTags(testCase.line, labels)
-		if !testCase.willFail {
+		if !testCase.willError {
 			assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
 		}
 		assert.Equal(t, testCase.parsedName, n)

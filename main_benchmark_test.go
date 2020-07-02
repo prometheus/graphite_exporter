@@ -50,13 +50,17 @@ rspamd.spam_count 3 NOW`
 	rawInput = strings.NewReplacer("NOW", fmt.Sprintf("%d", now.Unix())).Replace(rawInput)
 	input := strings.Split(rawInput, "\n")
 
+	c.mapper = &mockMapper{
+		name:    "not_used",
+		present: false,
+	}
+
+	// reset benchmark timer to not measure startup costs
+	b.ResetTimer()
+
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < times; i++ {
 			for _, l := range input {
-				c.mapper = &mockMapper{
-					name:    "not_used",
-					present: false,
-				}
 				c.processLine(l)
 			}
 		}

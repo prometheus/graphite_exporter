@@ -65,7 +65,7 @@ func TestParseNameAndTags(t *testing.T) {
 		{
 			line:       "my_simple_metric_with_bad_tags;tag1=value3;tag2",
 			parsedName: "my_simple_metric_with_bad_tags",
-			labels:     prometheus.Labels{
+			labels: prometheus.Labels{
 				"tag1": "value3",
 			},
 			willError: true,
@@ -73,7 +73,7 @@ func TestParseNameAndTags(t *testing.T) {
 		{
 			line:       "my_simple_metric_with_bad_tags;tag1=value3;tag2;tag3=value4",
 			parsedName: "my_simple_metric_with_bad_tags",
-			labels:     prometheus.Labels{
+			labels: prometheus.Labels{
 				"tag1": "value3",
 				"tag3": "value4",
 			},
@@ -82,13 +82,12 @@ func TestParseNameAndTags(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		labels := prometheus.Labels{}
-		n, err := parseMetricNameAndTags(testCase.line, labels)
+		n, parsedLabels, err := parseMetricNameAndTags(testCase.line)
 		if !testCase.willError {
 			assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
 		}
 		assert.Equal(t, testCase.parsedName, n)
-		assert.Equal(t, testCase.labels, labels)
+		assert.Equal(t, testCase.labels, parsedLabels)
 	}
 }
 
@@ -119,8 +118,19 @@ func TestProcessLine(t *testing.T) {
 			value:          float64(9001),
 		},
 		{
+			// will fail since my_simple_metric has different label keys than in the previous test case
 			line: "my.simple.metric.baz 9002 1534620625",
 			name: "my_simple_metric",
+			mappingLabels: prometheus.Labels{
+				"baz": "bat",
+			},
+			mappingPresent: true,
+			value:          float64(9002),
+			willFail:       true,
+		},
+		{
+			line: "my.simple.metric.new.baz 9002 1534620625",
+			name: "my_simple_metric_new",
 			mappingLabels: prometheus.Labels{
 				"baz": "bat",
 			},
@@ -135,11 +145,10 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: false,
 		},
 		{
-			line:          "my.nomap.metric.novalue 9001 ",
-			name:          "my_nomap_metric_novalue",
-			mappingLabels: nil,
-			value:         float64(9001),
-			willFail:      true,
+			line:     "my.nomap.metric.novalue 9001 ",
+			name:     "my_nomap_metric_novalue",
+			value:    float64(9001),
+			willFail: true,
 		},
 		{
 			line:           "my.mapped.metric.drop 55 1534620625",
@@ -153,6 +162,7 @@ func TestProcessLine(t *testing.T) {
 			name:           "my_mapped_strict_metric",
 			value:          float64(55),
 			mappingPresent: true,
+			mappingLabels:  prometheus.Labels{},
 			willFail:       false,
 			strict:         true,
 		},

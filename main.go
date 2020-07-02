@@ -173,8 +173,10 @@ func (c *graphiteCollector) processLines() {
 	}
 }
 
-func parseMetricNameAndTags(name string, labels prometheus.Labels) (string, error) {
+func parseMetricNameAndTags(name string) (string, prometheus.Labels, error) {
 	var err error
+
+	labels := make(prometheus.Labels)
 
 	parts := strings.Split(name, ";")
 	parsedName := parts[0]
@@ -194,53 +196,48 @@ func parseMetricNameAndTags(name string, labels prometheus.Labels) (string, erro
 		labels[k] = v
 	}
 
-	return parsedName, err
+	return parsedName, labels, err
 }
 
 func (c *graphiteCollector) processLine(line string) {
 	line = strings.TrimSpace(line)
 	level.Debug(c.logger).Log("msg", "Incoming line", "line", line)
+
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
 		level.Info(c.logger).Log("msg", "Invalid part count", "parts", len(parts), "line", line)
 		return
 	}
+
 	originalName := parts[0]
-	var name string
-	var err error
-	mapping, labels, mappingPresent := c.mapper.GetMapping(originalName, mapper.MetricTypeGauge)
+
+	parsedName, labels, err := parseMetricNameAndTags(originalName)
+	if err != nil {
+		level.Info(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
+	}
+
+	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
+
+	// add mapping labels to parsed labels
+	for k, v := range mappingLabels {
+		labels[k] = v
+	}
 
 	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && c.strictMatch) {
 		return
 	}
 
+	var name string
 	if mappingPresent {
-		parsedLabels := make(prometheus.Labels)
-		_, err = parseMetricNameAndTags(originalName, parsedLabels)
-		if err != nil {
-			level.Info(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
-		}
-
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
-		// check to ensure the same tags are present
-		if validKeys := metricNameKeysIndex.checkNameAndKeys(name, parsedLabels); !validKeys {
-			level.Info(c.logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
-			invalidMetrics.Inc()
-			return
-		}
 	} else {
-		labels = make(prometheus.Labels)
-		name, err = parseMetricNameAndTags(originalName, labels)
-		if err != nil {
-			level.Info(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
-		}
-		name = invalidMetricChars.ReplaceAllString(name, "_")
-		// check to ensure the same tags are present
-		if validKeys := metricNameKeysIndex.checkNameAndKeys(name, labels); !validKeys {
-			level.Info(c.logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
-			invalidMetrics.Inc()
-			return
-		}
+		name = invalidMetricChars.ReplaceAllString(parsedName, "_")
+	}
+
+	if validKeys := metricNameKeysIndex.checkNameAndKeys(name, labels); !validKeys {
+		level.Info(c.logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
+		invalidMetrics.Inc()
+		return
 	}
 
 	value, err := strconv.ParseFloat(parts[1], 64)

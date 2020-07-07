@@ -97,7 +97,7 @@ func TestProcessLine(t *testing.T) {
 		line           string
 		name           string
 		mappingLabels  prometheus.Labels
-		parsedLabels   prometheus.Labels
+		sampleLabels   prometheus.Labels
 		value          float64
 		mappingPresent bool
 		willFail       bool
@@ -110,6 +110,11 @@ func TestProcessLine(t *testing.T) {
 			line: "my.simple.metric 9001 1534620625",
 			name: "my_simple_metric",
 			mappingLabels: prometheus.Labels{
+				"foo":  "bar",
+				"zip":  "zot",
+				"name": "alabel",
+			},
+			sampleLabels: prometheus.Labels{
 				"foo":  "bar",
 				"zip":  "zot",
 				"name": "alabel",
@@ -134,6 +139,9 @@ func TestProcessLine(t *testing.T) {
 			mappingLabels: prometheus.Labels{
 				"baz": "bat",
 			},
+			sampleLabels: prometheus.Labels{
+				"baz": "bat",
+			},
 			mappingPresent: true,
 			value:          float64(9002),
 		},
@@ -141,7 +149,7 @@ func TestProcessLine(t *testing.T) {
 			line:           "my.nomap.metric 9001 1534620625",
 			name:           "my_nomap_metric",
 			value:          float64(9001),
-			parsedLabels:   prometheus.Labels{},
+			sampleLabels:   prometheus.Labels{},
 			mappingPresent: false,
 		},
 		{
@@ -163,6 +171,7 @@ func TestProcessLine(t *testing.T) {
 			value:          float64(55),
 			mappingPresent: true,
 			mappingLabels:  prometheus.Labels{},
+			sampleLabels:   prometheus.Labels{},
 			willFail:       false,
 			strict:         true,
 		},
@@ -176,7 +185,7 @@ func TestProcessLine(t *testing.T) {
 		{
 			line: "my.simple.metric.with.tags;tag1=value1;tag2=value2 9002 1534620625",
 			name: "my_simple_metric_with_tags",
-			parsedLabels: prometheus.Labels{
+			sampleLabels: prometheus.Labels{
 				"tag1": "value1",
 				"tag2": "value2",
 			},
@@ -187,12 +196,27 @@ func TestProcessLine(t *testing.T) {
 			// same tags, different values, should parse
 			line: "my.simple.metric.with.tags;tag1=value3;tag2=value4 9002 1534620625",
 			name: "my_simple_metric_with_tags",
-			parsedLabels: prometheus.Labels{
+			sampleLabels: prometheus.Labels{
 				"tag1": "value3",
 				"tag2": "value4",
 			},
 			mappingPresent: false,
 			value:          float64(9002),
+		},
+		{
+			// labels in mapping should be added to sample labels
+			line: "my.mapped.metric.with.tags;tag1=value3;tag2=value4 9003 1534620625",
+			name: "my_mapped_metric_with_tags",
+			mappingLabels: prometheus.Labels{
+				"foobar": "baz",
+			},
+			sampleLabels: prometheus.Labels{
+				"tag1":   "value3",
+				"tag2":   "value4",
+				"foobar": "baz",
+			},
+			mappingPresent: true,
+			value:          float64(9003),
 		},
 		{
 			// new tags other than previously used, should drop
@@ -233,11 +257,7 @@ func TestProcessLine(t *testing.T) {
 		} else {
 			if assert.NotNil(t, sample, "Missing %s", k.name) {
 				assert.Equal(t, k.name, sample.Name)
-				if k.mappingPresent {
-					assert.Equal(t, k.mappingLabels, sample.Labels)
-				} else {
-					assert.Equal(t, k.parsedLabels, sample.Labels)
-				}
+				assert.Equal(t, k.sampleLabels, sample.Labels)
 				assert.Equal(t, k.value, sample.Value)
 			}
 		}

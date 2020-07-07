@@ -53,8 +53,8 @@ func TestParseNameAndTags(t *testing.T) {
 		willError  bool
 	}
 
-	testCases := []testCase{
-		{
+	testCases := map[string]testCase{
+		"good tags": {
 			line:       "my_simple_metric_with_tags;tag1=value1;tag2=value2",
 			parsedName: "my_simple_metric_with_tags",
 			labels: prometheus.Labels{
@@ -62,7 +62,7 @@ func TestParseNameAndTags(t *testing.T) {
 				"tag2": "value2",
 			},
 		},
-		{
+		"no tag value": {
 			line:       "my_simple_metric_with_bad_tags;tag1=value3;tag2",
 			parsedName: "my_simple_metric_with_bad_tags",
 			labels: prometheus.Labels{
@@ -70,7 +70,7 @@ func TestParseNameAndTags(t *testing.T) {
 			},
 			willError: true,
 		},
-		{
+		"no tag value in middle": {
 			line:       "my_simple_metric_with_bad_tags;tag1=value3;tag2;tag3=value4",
 			parsedName: "my_simple_metric_with_bad_tags",
 			labels: prometheus.Labels{
@@ -81,13 +81,15 @@ func TestParseNameAndTags(t *testing.T) {
 		},
 	}
 
-	for _, testCase := range testCases {
-		n, parsedLabels, err := parseMetricNameAndTags(testCase.line)
-		if !testCase.willError {
-			assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
-		}
-		assert.Equal(t, testCase.parsedName, n)
-		assert.Equal(t, testCase.labels, parsedLabels)
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			n, parsedLabels, err := parseMetricNameAndTags(testCase.line)
+			if !testCase.willError {
+				assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
+			}
+			assert.Equal(t, testCase.parsedName, n)
+			assert.Equal(t, testCase.labels, parsedLabels)
+		})
 	}
 }
 
@@ -105,8 +107,8 @@ func TestProcessLine(t *testing.T) {
 		strict         bool
 	}
 
-	testCases := []testCase{
-		{
+	testCases := map[string]testCase{
+		"simple metric": {
 			line: "my.simple.metric 9001 1534620625",
 			name: "my_simple_metric",
 			mappingLabels: prometheus.Labels{
@@ -122,7 +124,7 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: true,
 			value:          float64(9001),
 		},
-		{
+		"metric with different labels is dropped": {
 			// will fail since my_simple_metric has different label keys than in the previous test case
 			line: "my.simple.metric.baz 9002 1534620625",
 			name: "my_simple_metric",
@@ -133,7 +135,7 @@ func TestProcessLine(t *testing.T) {
 			value:          float64(9002),
 			willFail:       true,
 		},
-		{
+		"mapped metric": {
 			line: "my.simple.metric.new.baz 9002 1534620625",
 			name: "my_simple_metric_new",
 			mappingLabels: prometheus.Labels{
@@ -145,27 +147,27 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: true,
 			value:          float64(9002),
 		},
-		{
+		"no mapping metric": {
 			line:           "my.nomap.metric 9001 1534620625",
 			name:           "my_nomap_metric",
 			value:          float64(9001),
 			sampleLabels:   prometheus.Labels{},
 			mappingPresent: false,
 		},
-		{
+		"no mapping metric with no value": {
 			line:     "my.nomap.metric.novalue 9001 ",
 			name:     "my_nomap_metric_novalue",
 			value:    float64(9001),
 			willFail: true,
 		},
-		{
+		"mapping type drop": {
 			line:           "my.mapped.metric.drop 55 1534620625",
 			name:           "my_mapped_metric_drop",
 			mappingPresent: true,
 			willFail:       true,
 			action:         mapper.ActionTypeDrop,
 		},
-		{
+		"strict mapped metric": {
 			line:           "my.mapped.strict.metric 55 1534620625",
 			name:           "my_mapped_strict_metric",
 			value:          float64(55),
@@ -175,14 +177,14 @@ func TestProcessLine(t *testing.T) {
 			willFail:       false,
 			strict:         true,
 		},
-		{
+		"strict unmapped metric will drop": {
 			line:           "my.mapped.strict.metric.drop 55 1534620625",
 			name:           "my_mapped_strict_metric_drop",
 			mappingPresent: false,
 			willFail:       true,
 			strict:         true,
 		},
-		{
+		"unmapped metric with tags": {
 			line: "my.simple.metric.with.tags;tag1=value1;tag2=value2 9002 1534620625",
 			name: "my_simple_metric_with_tags",
 			sampleLabels: prometheus.Labels{
@@ -192,7 +194,7 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: false,
 			value:          float64(9002),
 		},
-		{
+		"unmapped metric with different tag values": {
 			// same tags, different values, should parse
 			line: "my.simple.metric.with.tags;tag1=value3;tag2=value4 9002 1534620625",
 			name: "my_simple_metric_with_tags",
@@ -203,7 +205,7 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: false,
 			value:          float64(9002),
 		},
-		{
+		"mapping labels added to tags": {
 			// labels in mapping should be added to sample labels
 			line: "my.mapped.metric.with.tags;tag1=value3;tag2=value4 9003 1534620625",
 			name: "my_mapped_metric_with_tags",
@@ -218,7 +220,7 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: true,
 			value:          float64(9003),
 		},
-		{
+		"different tag keys will drop": {
 			// new tags other than previously used, should drop
 			line:     "my.simple.metric.with.tags;tag1=value1;tag3=value2 9002 1534620625",
 			name:     "my_simple_metric_with_tags",
@@ -229,7 +231,6 @@ func TestProcessLine(t *testing.T) {
 	c := newGraphiteCollector(log.NewNopLogger())
 
 	for _, testCase := range testCases {
-
 		if testCase.mappingPresent {
 			c.mapper = &mockMapper{
 				name:    testCase.name,
@@ -245,21 +246,22 @@ func TestProcessLine(t *testing.T) {
 
 		c.strictMatch = testCase.strict
 		c.processLine(testCase.line)
-
 	}
 
 	c.sampleCh <- nil
-	for _, k := range testCases {
-		originalName := strings.Split(k.line, " ")[0]
-		sample := c.samples[originalName]
-		if k.willFail {
-			assert.Nil(t, sample, "Found %s", k.name)
-		} else {
-			if assert.NotNil(t, sample, "Missing %s", k.name) {
-				assert.Equal(t, k.name, sample.Name)
-				assert.Equal(t, k.sampleLabels, sample.Labels)
-				assert.Equal(t, k.value, sample.Value)
+	for name, k := range testCases {
+		t.Run(name, func(t *testing.T) {
+			originalName := strings.Split(k.line, " ")[0]
+			sample := c.samples[originalName]
+			if k.willFail {
+				assert.Nil(t, sample, "Found %s", k.name)
+			} else {
+				if assert.NotNil(t, sample, "Missing %s", k.name) {
+					assert.Equal(t, k.name, sample.Name)
+					assert.Equal(t, k.sampleLabels, sample.Labels)
+					assert.Equal(t, k.value, sample.Value)
+				}
 			}
-		}
+		})
 	}
 }

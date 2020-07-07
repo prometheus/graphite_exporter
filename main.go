@@ -24,7 +24,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -74,8 +73,7 @@ var (
 			Name: "graphite_invalid_metrics",
 			Help: "Total count of metrics dropped due to mismatched label keys",
 		})
-	invalidMetricChars  = regexp.MustCompile("[^a-zA-Z0-9_:]")
-	metricNameKeysIndex = newMetricNameAndKeys()
+	invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 )
 
 type graphiteSample struct {
@@ -96,41 +94,6 @@ type metricMapper interface {
 	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
 	InitFromFile(string, int, ...mapper.CacheOption) error
 	InitCache(int, ...mapper.CacheOption)
-}
-
-// metricNameAndKeys is a cache of metric names and the label keys previously used
-type metricNameAndKeys struct {
-	mtx   sync.Mutex
-	cache map[string]string
-}
-
-func newMetricNameAndKeys() *metricNameAndKeys {
-	x := metricNameAndKeys{
-		cache: make(map[string]string),
-	}
-	return &x
-}
-
-func keysFromLabels(labels prometheus.Labels) string {
-	labelKeys := make([]string, len(labels))
-	for k, _ := range labels {
-		labelKeys = append(labelKeys, k)
-	}
-	sort.Strings(labelKeys)
-	return strings.Join(labelKeys, ",")
-}
-
-// checkNameAndKeys returns true if metric has the same label keys or is new, false if not
-func (c *metricNameAndKeys) checkNameAndKeys(name string, labels prometheus.Labels) bool {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
-	providedKeys := keysFromLabels(labels)
-	if keys, found := c.cache[name]; found {
-		return keys == providedKeys
-	}
-
-	c.cache[name] = providedKeys
-	return true
 }
 
 type graphiteCollector struct {
@@ -234,12 +197,6 @@ func (c *graphiteCollector) processLine(line string) {
 		name = invalidMetricChars.ReplaceAllString(parsedName, "_")
 	}
 
-	if validKeys := metricNameKeysIndex.checkNameAndKeys(name, labels); !validKeys {
-		level.Info(c.logger).Log("msg", "Dropped because metric keys do not match previously used keys", "line", line)
-		invalidMetrics.Inc()
-		return
-	}
-
 	value, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
 		level.Info(c.logger).Log("msg", "Invalid value", "line", line)
@@ -314,10 +271,8 @@ func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-// Describe implements prometheus.Collector.
-func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- lastProcessed.Desc()
-}
+// Describe implements prometheus.Collector but does not yield a description, allowing inconsistent label sets
+func (c graphiteCollector) Describe(_ chan<- *prometheus.Desc) {}
 
 func init() {
 	prometheus.MustRegister(version.NewCollector("graphite_exporter"))

@@ -124,16 +124,18 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: true,
 			value:          float64(9001),
 		},
-		"metric with different labels is dropped": {
-			// will fail since my_simple_metric has different label keys than in the previous test case
+		"existing metric with different labels is accepted": {
 			line: "my.simple.metric.baz 9002 1534620625",
 			name: "my_simple_metric",
 			mappingLabels: prometheus.Labels{
 				"baz": "bat",
 			},
+			sampleLabels: prometheus.Labels{
+				"baz": "bat",
+			},
 			mappingPresent: true,
 			value:          float64(9002),
-			willFail:       true,
+			willFail:       false,
 		},
 		"mapped metric": {
 			line: "my.simple.metric.new.baz 9002 1534620625",
@@ -219,12 +221,6 @@ func TestProcessLine(t *testing.T) {
 			},
 			mappingPresent: true,
 			value:          float64(9003),
-		},
-		"different tag keys will drop": {
-			// new tags other than previously used, should drop
-			line:     "my.simple.metric.with.tags;tag1=value1;tag3=value2 9002 1534620625",
-			name:     "my_simple_metric_with_tags",
-			willFail: true,
 		},
 	}
 

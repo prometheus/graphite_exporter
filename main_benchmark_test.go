@@ -22,13 +22,13 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
-func benchmarkProcessLine(times int, b *testing.B) {
-	logger := log.NewNopLogger()
-	c := newGraphiteCollector(logger)
+var (
+	logger = log.NewNopLogger()
+	c      = newGraphiteCollector(logger)
 
-	now := time.Now()
+	now = time.Now()
 
-	rawInput := `rspamd.actions.add_header 2 NOW
+	rawInput = `rspamd.actions.add_header 2 NOW
 rspamd.actions;action=greylist 0 NOW
 rspamd.actions;action=no_action 24 NOW
 rspamd.actions;action=reject 1 NOW
@@ -47,32 +47,55 @@ rspamd.pools_freed 171 NOW
 rspamd.scanned 27 NOW
 rspamd.shared_chunks_allocated 34 NOW
 rspamd.spam_count 3 NOW`
-	rawInput = strings.NewReplacer("NOW", fmt.Sprintf("%d", now.Unix())).Replace(rawInput)
-	input := strings.Split(rawInput, "\n")
+	rawInput2 = strings.NewReplacer("NOW", fmt.Sprintf("%d", now.Unix())).Replace(rawInput)
+	input     = strings.Split(rawInput2, "\n")
 
+	// The name should be the same length to ensure the only difference is the tag parsing
+	untaggedLine = fmt.Sprintf("rspamd.actions 2 %d", now.Unix())
+	taggedLine   = fmt.Sprintf("rspamd.actions;action=add_header;foo=bar 2 %d", now.Unix())
+)
+
+func init() {
 	c.mapper = &mockMapper{
 		name:    "not_used",
 		present: false,
 	}
+}
 
-	// reset benchmark timer to not measure startup costs
-	b.ResetTimer()
-
+func benchmarkProcessLines(times int, b *testing.B, lines []string) {
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < times; i++ {
-			for _, l := range input {
+			for _, l := range lines {
 				c.processLine(l)
 			}
 		}
 	}
 }
 
-func BenchmarkProcessLine1(b *testing.B) {
-	benchmarkProcessLine(1, b)
+func benchmarkProcessLine(b *testing.B, line string) {
+	// always report allocations since this is a hot path
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		c.processLine(line)
+	}
 }
-func BenchmarkProcessLine5(b *testing.B) {
-	benchmarkProcessLine(5, b)
+
+// Mixed lines benchmarks
+func BenchmarkProcessLineMixed1(b *testing.B) {
+	benchmarkProcessLines(1, b, input)
 }
-func BenchmarkProcessLine50(b *testing.B) {
-	benchmarkProcessLine(50, b)
+func BenchmarkProcessLineMixed5(b *testing.B) {
+	benchmarkProcessLines(5, b, input)
+}
+func BenchmarkProcessLineMixed50(b *testing.B) {
+	benchmarkProcessLines(50, b, input)
+}
+
+// Individual line benchmarks
+func BenchmarkProcessLineUntagged(b *testing.B) {
+	benchmarkProcessLine(b, untaggedLine)
+}
+func BenchmarkProcessLineTagged(b *testing.B) {
+	benchmarkProcessLine(b, taggedLine)
 }

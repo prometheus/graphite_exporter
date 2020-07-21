@@ -68,11 +68,6 @@ var (
 			Name: "graphite_tag_parse_failures",
 			Help: "Total count of samples with invalid tags",
 		})
-	invalidMetrics = prometheus.NewCounter(
-		prometheus.CounterOpts{
-			Name: "graphite_invalid_metrics",
-			Help: "Total count of metrics dropped due to mismatched label keys",
-		})
 	invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 )
 
@@ -176,7 +171,7 @@ func (c *graphiteCollector) processLine(line string) {
 
 	parsedName, labels, err := parseMetricNameAndTags(originalName)
 	if err != nil {
-		level.Info(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
+		level.Debug(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
 	}
 
 	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
@@ -305,7 +300,6 @@ func main() {
 
 	prometheus.MustRegister(sampleExpiryMetric)
 	prometheus.MustRegister(tagParseFailures)
-	prometheus.MustRegister(invalidMetrics)
 	sampleExpiryMetric.Set(sampleExpiry.Seconds())
 
 	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info())

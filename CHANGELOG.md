@@ -1,3 +1,7 @@
+## 0.9.0 / 2020-07-21
+
+* [ENHANCEMENT] Generate labels from Graphite tags ([#133](https://github.com/prometheus/graphite_exporter/pull/133))
+
 ## 0.8.0 / 2020-06-12
 
 * [CHANGE] Update metric mapper and other dependencies ([#127](https://github.com/prometheus/graphite_exporter/pull/127))

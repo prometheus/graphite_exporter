@@ -63,13 +63,18 @@ var (
 			Help: "How long in seconds a metric sample is valid for.",
 		},
 	)
+	tagParseFailures = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Name: "graphite_tag_parse_failures",
+			Help: "Total count of samples with invalid tags",
+		})
 	invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 )
 
 type graphiteSample struct {
 	OriginalName string
 	Name         string
-	Labels       map[string]string
+	Labels       prometheus.Labels
 	Help         string
 	Value        float64
 	Type         prometheus.ValueType
@@ -126,26 +131,65 @@ func (c *graphiteCollector) processLines() {
 	}
 }
 
+func parseMetricNameAndTags(name string) (string, prometheus.Labels, error) {
+	var err error
+
+	labels := make(prometheus.Labels)
+
+	parts := strings.Split(name, ";")
+	parsedName := parts[0]
+
+	tags := parts[1:]
+	for _, tag := range tags {
+		kv := strings.SplitN(tag, "=", 2)
+		if len(kv) != 2 {
+			// don't add this tag, continue processing tags but return an error
+			tagParseFailures.Inc()
+			err = fmt.Errorf("error parsing tag %s", tag)
+			continue
+		}
+
+		k := kv[0]
+		v := kv[1]
+		labels[k] = v
+	}
+
+	return parsedName, labels, err
+}
+
 func (c *graphiteCollector) processLine(line string) {
 	line = strings.TrimSpace(line)
 	level.Debug(c.logger).Log("msg", "Incoming line", "line", line)
+
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
 		level.Info(c.logger).Log("msg", "Invalid part count", "parts", len(parts), "line", line)
 		return
 	}
-	originalName := parts[0]
-	var name string
-	mapping, labels, present := c.mapper.GetMapping(originalName, mapper.MetricTypeGauge)
 
-	if (present && mapping.Action == mapper.ActionTypeDrop) || (!present && c.strictMatch) {
+	originalName := parts[0]
+
+	parsedName, labels, err := parseMetricNameAndTags(originalName)
+	if err != nil {
+		level.Debug(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
+	}
+
+	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
+
+	// add mapping labels to parsed labels
+	for k, v := range mappingLabels {
+		labels[k] = v
+	}
+
+	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && c.strictMatch) {
 		return
 	}
 
-	if present {
+	var name string
+	if mappingPresent {
 		name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
 	} else {
-		name = invalidMetricChars.ReplaceAllString(originalName, "_")
+		name = invalidMetricChars.ReplaceAllString(parsedName, "_")
 	}
 
 	value, err := strconv.ParseFloat(parts[1], 64)
@@ -222,10 +266,8 @@ func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-// Describe implements prometheus.Collector.
-func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
-	ch <- lastProcessed.Desc()
-}
+// Describe implements prometheus.Collector but does not yield a description, allowing inconsistent label sets
+func (c graphiteCollector) Describe(_ chan<- *prometheus.Desc) {}
 
 func init() {
 	prometheus.MustRegister(version.NewCollector("graphite_exporter"))
@@ -257,6 +299,7 @@ func main() {
 	logger := promlog.New(promlogConfig)
 
 	prometheus.MustRegister(sampleExpiryMetric)
+	prometheus.MustRegister(tagParseFailures)
 	sampleExpiryMetric.Set(sampleExpiry.Seconds())
 
 	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info())

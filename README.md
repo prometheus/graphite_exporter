@@ -32,6 +32,9 @@ Metrics will be available on [http://localhost:9108/metrics](http://localhost:91
 To avoid using unbounded memory, metrics will be garbage collected five minutes after
 they are last pushed to. This is configurable with the `--graphite.sample-expiry` flag.
 
+## Graphite Tags
+The graphite_exporter accepts metrics in the [tagged carbon format](https://graphite.readthedocs.io/en/latest/tags.html). Labels specified in the mapping configuration take precedence over tags in the metric. In the case where there are valid and invalid tags supplied in one metric, the invalid tags will be dropped and the `graphite_tag_parse_failures` counter will be incremented. The exporter accepts inconsistent label sets, but this may cause issues querying the data in Prometheus.
+
 ## Metric Mapping and Configuration
 
 **Please note there has been a breaking change in configuration after version 0.2.0.  The YAML style config from [statsd_exporter](https://github.com/prometheus/statsd_exporter) is now used.  See conversion instructions below**

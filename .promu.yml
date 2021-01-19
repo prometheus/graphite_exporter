@@ -5,6 +5,9 @@ go:
 repository:
     path: github.com/prometheus/graphite_exporter
 build:
+    binaries:
+        - name: graphite_exporter
+          path: ./cmd/graphite_exporter
     flags: -mod=vendor -a -tags netgo
     ldflags: |
         -X github.com/prometheus/common/version.Version={{.Version}}

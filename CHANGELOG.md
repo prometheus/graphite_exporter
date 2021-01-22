@@ -1,3 +1,10 @@
+## 0.10.0 / Unreleased
+
+* [CHANGE] Reorganize repository ([#144](https://github.com/prometheus/graphite_exporter/pull/144))
+
+The main binary package is now `github.com/prometheus/graphite_exporter/cmd/graphite_exporter`.
+This has no effect on those using the binary release.
+
 ## 0.9.0 / 2020-07-21
 
 * [ENHANCEMENT] Generate labels from Graphite tags ([#133](https://github.com/prometheus/graphite_exporter/pull/133))

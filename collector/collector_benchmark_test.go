@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package collector
 
 import (
 	"fmt"
@@ -20,11 +20,13 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/statsd_exporter/pkg/mapper"
 )
 
 var (
 	logger = log.NewNopLogger()
-	c      = newGraphiteCollector(logger)
+	c      = NewGraphiteCollector(logger, false, 5*time.Minute)
 
 	now = time.Now()
 
@@ -54,6 +56,28 @@ rspamd.spam_count 3 NOW`
 	untaggedLine = fmt.Sprintf("rspamd.actions 2 %d", now.Unix())
 	taggedLine   = fmt.Sprintf("rspamd.actions;action=add_header;foo=bar 2 %d", now.Unix())
 )
+
+type mockMapper struct {
+	labels  prometheus.Labels
+	present bool
+	name    string
+	action  mapper.ActionType
+}
+
+func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
+
+	mapping := mapper.MetricMapping{Name: m.name, Action: m.action}
+
+	return &mapping, m.labels, m.present
+
+}
+
+func (m *mockMapper) InitFromFile(string, int, ...mapper.CacheOption) error {
+	return nil
+}
+func (m *mockMapper) InitCache(int, ...mapper.CacheOption) {
+
+}
 
 func init() {
 	c.mapper = &mockMapper{

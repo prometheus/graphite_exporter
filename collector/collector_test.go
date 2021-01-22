@@ -1,4 +1,4 @@
-// Copyright 2018 The Prometheus Authors
+// Copyright 2021 The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -11,11 +11,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package collector
 
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,29 +24,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockMapper struct {
-	labels  prometheus.Labels
-	present bool
-	name    string
-	action  mapper.ActionType
-}
-
-func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
-
-	mapping := mapper.MetricMapping{Name: m.name, Action: m.action}
-
-	return &mapping, m.labels, m.present
-
-}
-
-func (m *mockMapper) InitFromFile(string, int, ...mapper.CacheOption) error {
-	return nil
-}
-func (m *mockMapper) InitCache(int, ...mapper.CacheOption) {
-
-}
-
 func TestParseNameAndTags(t *testing.T) {
+	logger := log.NewNopLogger()
+	c := NewGraphiteCollector(logger, false, 5*time.Minute)
 	type testCase struct {
 		line       string
 		parsedName string
@@ -83,7 +64,7 @@ func TestParseNameAndTags(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			n, parsedLabels, err := parseMetricNameAndTags(testCase.line)
+			n, parsedLabels, err := c.parseMetricNameAndTags(testCase.line)
 			if !testCase.willError {
 				assert.NoError(t, err, "Got unexpected error parsing %s", testCase.line)
 			}
@@ -224,7 +205,7 @@ func TestProcessLine(t *testing.T) {
 		},
 	}
 
-	c := newGraphiteCollector(log.NewNopLogger())
+	c := NewGraphiteCollector(log.NewNopLogger(), false, 5*time.Minute)
 
 	for _, testCase := range testCases {
 		if testCase.mappingPresent {

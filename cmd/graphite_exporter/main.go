@@ -45,6 +45,7 @@ var (
 	cacheSize       = kingpin.Flag("graphite.cache-size", "Maximum size of your metric mapping cache. Relies on least recently used replacement policy if max size is reached.").Default("1000").Int()
 	cacheType       = kingpin.Flag("graphite.cache-type", "Metric mapping cache type. Valid options are \"lru\" and \"random\"").Default("lru").Enum("lru", "random")
 	dumpFSMPath     = kingpin.Flag("debug.dump-fsm", "The path to dump internal FSM generated for glob matching as Dot file.").Default("").String()
+	checkConfig     = kingpin.Flag("check-config", "Check configuration and exit.").Default("false").Bool()
 )
 
 func init() {
@@ -94,6 +95,11 @@ func main() {
 		}
 	} else {
 		metricMapper.InitCache(*cacheSize, cacheOption)
+	}
+
+	if *checkConfig {
+		level.Info(logger).Log("msg", "Configuration check successful, exiting")
+		return
 	}
 
 	if *dumpFSMPath != "" {

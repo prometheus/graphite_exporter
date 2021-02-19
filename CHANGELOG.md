@@ -1,6 +1,7 @@
 ## 0.10.0 / Unreleased
 
 * [CHANGE] Reorganize repository ([#144](https://github.com/prometheus/graphite_exporter/pull/144))
+* [ENHANCEMENT] Configuration check ([#146](https://github.com/prometheus/graphite_exporter/pull/146))
 
 The main binary package is now `github.com/prometheus/graphite_exporter/cmd/graphite_exporter`.
 This has no effect on those using the binary release.

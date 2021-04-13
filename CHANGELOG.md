@@ -1,4 +1,4 @@
-## 0.10.0 / Unreleased
+## 0.10.0 / 2021-04-13
 
 * [CHANGE] Reorganize repository ([#144](https://github.com/prometheus/graphite_exporter/pull/144))
 * [ENHANCEMENT] Configuration check ([#146](https://github.com/prometheus/graphite_exporter/pull/146))

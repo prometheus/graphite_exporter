@@ -1,3 +1,9 @@
+## 0.10.1 / 2021-05-12
+
+No changes.
+This release will include an updated Busybox in the Docker image, which fixes [CVE-2018-1000500](https://nvd.nist.gov/vuln/detail/CVE-2018-1000500).
+This security issue does not affect you unless you extend the container and use gzip, but it trips security scanners, so we provide this version.
+
 ## 0.10.0 / 2021-04-13
 
 * [CHANGE] Reorganize repository ([#144](https://github.com/prometheus/graphite_exporter/pull/144))

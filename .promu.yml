@@ -8,6 +8,8 @@ build:
     binaries:
         - name: graphite_exporter
           path: ./cmd/graphite_exporter
+        - name: getool
+          path: ./cmd/getool
     flags: -a -tags netgo
     ldflags: |
         -X github.com/prometheus/common/version.Version={{.Version}}

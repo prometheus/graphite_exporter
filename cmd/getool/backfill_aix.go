@@ -15,8 +15,11 @@
 
 package main
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
-func backfillWhisper(inputDir, outputDir, mappingConfig string, strictMatch, humanReadable bool) (err error) {
+func backfillWhisper(inputDir, outputDir, mappingConfig string, strictMatch, humanReadable bool, optBlockDuration time.Duration) (err error) {
 	return errors.New("backfilling is not supported for this architecture")
 }

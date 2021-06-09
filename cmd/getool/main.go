@@ -14,6 +14,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -43,4 +44,12 @@ func main() {
 	case importCmd.FullCommand():
 		os.Exit(checkErr(backfillWhisper(*importFilePath, *importDBPath, *importMappingConfig, *importStrictMatch, *importHumanReadable, *importBlockDuration)))
 	}
+}
+
+func checkErr(err error) int {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
+	return 0
 }

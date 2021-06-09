@@ -182,14 +182,6 @@ func printBlocks(blocks []tsdb.BlockReader, writeHeader, humanReadable bool) {
 	}
 }
 
-func checkErr(err error) int {
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		return 1
-	}
-	return 0
-}
-
 func getFormatedTime(timestamp int64, humanReadable bool) string {
 	if humanReadable {
 		return time.Unix(timestamp/1000, 0).UTC().String()

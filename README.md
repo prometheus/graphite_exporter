@@ -146,6 +146,17 @@ docker run -d -p 9108:9108 -p 9109:9109 -p 9109:9109/udp \
         prom/graphite-exporter --graphite.mapping-config=/tmp/graphite_mapping.conf
 ```
 
+## Importing Whisper data
+
+**EXPERIMENTAL**
+
+Import data from Graphite using the bundled `getool`.
+See `getool create-blocks --help` for usage.
+
+To import long-term data in a reasonable amount of resources, increase the duration per generated TSDB block.
+The `--block-duration` must be a power of two in hours, e.g. `4h`, `8h`, and so on.
+
+To merge the data into an existing Prometheus storage directory, start Prometheus with the `--storage.tsdb.allow-overlapping-blocks` flag.
 
 [circleci]: https://circleci.com/gh/prometheus/graphite_exporter
 [hub]: https://hub.docker.com/r/prom/graphite-exporter/

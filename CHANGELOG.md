@@ -1,3 +1,9 @@
+## 0.11.0 / Unreleased
+
+* [ENHANCEMENT] Add experimental tool for converting historical data ([#145](https://github.com/prometheus/graphite_exporter/pull/145))
+
+This release adds the `getool` binary to the release tarball.
+
 ## 0.10.1 / 2021-05-12
 
 No changes.

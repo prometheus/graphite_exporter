@@ -1,4 +1,4 @@
-## 0.11.0 / Unreleased
+## 0.11.0 / 2021-09-01
 
 * [ENHANCEMENT] Add experimental tool for converting historical data ([#145](https://github.com/prometheus/graphite_exporter/pull/145))
 

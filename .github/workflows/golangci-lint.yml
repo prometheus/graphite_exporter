@@ -7,10 +7,7 @@ on:
       - "**.go"
       - "scripts/errcheck_excludes.txt"
       - ".github/workflows/golangci-lint.yml"
-<<<<<<< HEAD
       - ".golangci.yml"
-=======
->>>>>>> 199dc86 (Update common Prometheus files)
   pull_request:
     paths:
       - "go.sum"
@@ -18,10 +15,9 @@ on:
       - "**.go"
       - "scripts/errcheck_excludes.txt"
       - ".github/workflows/golangci-lint.yml"
-<<<<<<< HEAD
       - ".golangci.yml"
-=======
->>>>>>> 199dc86 (Update common Prometheus files)
+
+
 
 jobs:
   golangci:

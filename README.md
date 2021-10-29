@@ -166,7 +166,8 @@ In the transition to the Graphite data model and back, information is lost.
 Additionally, default metrics conflict between the client libraries and the exporter.
 
 Instead, configure Prometheus to scrape your application directly, without the exporter in the middle.
-If you absolutely must push, consider the [Grafana agent](https://github.com/grafana/agent) instead.
+For batch or ephemeral jobs, use the [pushgateway](https://prometheus.io/docs/practices/pushing/) [integration](https://github.com/prometheus/client_python#exporting-to-a-pushgateway).
+If you absolutely must push, consider [PushProx](https://github.com/prometheus-community/PushProx) or the [Grafana agent](https://github.com/grafana/agent) instead.
 
 
 ## TLS and basic authentication

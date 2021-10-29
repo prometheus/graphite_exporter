@@ -170,6 +170,7 @@ For batch or ephemeral jobs, use the [pushgateway](https://prometheus.io/docs/pr
 If you absolutely must push, consider [PushProx](https://github.com/prometheus-community/PushProx) or the [Grafana agent](https://github.com/grafana/agent) instead.
 If you absolutely must push, consider the [Grafana agent](https://github.com/grafana/agent) instead.
 
+
 ## TLS and basic authentication
 
 Graphite Exporter supports TLS and basic authentication. This enables better

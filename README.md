@@ -15,14 +15,15 @@ as the [Node Exporter](https://github.com/prometheus/node_exporter).
 
 ## Usage
 
-```
+```sh
 make
 ./graphite_exporter
 ```
 
 Configure existing monitoring to send Graphite plaintext data to port 9109 on UDP or TCP.
 As a simple demonstration:
-```
+
+```sh
 echo "test_tcp 1234 $(date +%s)" | nc localhost 9109
 echo "test_udp 1234 $(date +%s)" | nc -u -w1 localhost 9109
 ```
@@ -33,6 +34,7 @@ To avoid using unbounded memory, metrics will be garbage collected five minutes 
 they are last pushed to. This is configurable with the `--graphite.sample-expiry` flag.
 
 ## Graphite Tags
+
 The graphite_exporter accepts metrics in the [tagged carbon format](https://graphite.readthedocs.io/en/latest/tags.html). Labels specified in the mapping configuration take precedence over tags in the metric. In the case where there are valid and invalid tags supplied in one metric, the invalid tags will be dropped and the `graphite_tag_parse_failures` counter will be incremented. The exporter accepts inconsistent label sets, but this may cause issues querying the data in Prometheus.
 
 ## Metric Mapping and Configuration
@@ -40,11 +42,12 @@ The graphite_exporter accepts metrics in the [tagged carbon format](https://grap
 **Please note there has been a breaking change in configuration after version 0.2.0.  The YAML style config from [statsd_exporter](https://github.com/prometheus/statsd_exporter) is now used.  See conversion instructions below**
 
 ### YAML Config
+
 The graphite_exporter can be configured to translate specific dot-separated
 graphite metrics into labeled Prometheus metrics via YAML configuration file.  This file shares syntax and logic with [statsd_exporter](https://github.com/prometheus/statsd_exporter).  Please follow the statsd_exporter documentation for usage information.  However, graphite_exporter does not support *all* parsing features at this time.  Any feature based on the 'timer_type' option will not function.  Otherwise, regex matching, groups, match/drop behavior, should work as expected.
 
 Metrics that don't match any mapping in the configuration file are translated
-into Prometheus metrics without any labels and with names in which every 
+into Prometheus metrics without any labels and with names in which every
 non-alphanumeric character except `_` and `:` is replaced with `_`.
 
 If you have a very large set of metrics you may want to skip the ones that don't
@@ -54,7 +57,7 @@ you really want.
 
 An example mapping configuration:
 
-```
+```yaml
 mappings:
 - match: test.dispatcher.*.*.*
   name: dispatcher_events_total
@@ -80,25 +83,25 @@ mappings:
 This would transform these example graphite metrics into Prometheus metrics as
 follows:
 
-    test.dispatcher.FooProcessor.send.success
-     => dispatcher_events_total{processor="FooProcessor", action="send", outcome="success", job="test_dispatcher"}
+```console
+test.dispatcher.FooProcessor.send.success
+  => dispatcher_events_total{processor="FooProcessor", action="send", outcome="success", job="test_dispatcher"}
 
-    foo_product.signup.facebook.failure
-     => signup_events_total{provider="facebook", outcome="failure", job="foo_product_server"}
+foo_product.signup.facebook.failure
+  => signup_events_total{provider="facebook", outcome="failure", job="foo_product_server"}
 
-    test.web-server.foo.bar
-     => test_web__server_foo_bar{}
-    
-    servers.rack-003-server-c4de.networking.subnetworks.transmissions.eth0.failure.mean_rate
-     => servers_networking_transmissions_failure_mean_rate{device="eth0",hostname="rack-003-server-c4de"}
+test.web-server.foo.bar
+  => test_web__server_foo_bar{}
 
-
+servers.rack-003-server-c4de.networking.subnetworks.transmissions.eth0.failure.mean_rate
+  => servers_networking_transmissions_failure_mean_rate{device="eth0",hostname="rack-003-server-c4de"}
+```
 
 ### Conversion from legacy configuration
 
 If you have an existing config file using the legacy mapping syntax, you may use [statsd-exporter-convert](https://github.com/bakins/statsd-exporter-convert) to update to the new YAML based syntax.  Here we convert the old example synatx:
 
-```
+```console
 $ go get -u github.com/bakins/statsd-exporter-convert
 
 $ cat example.conf
@@ -130,7 +133,7 @@ mappings:
     job: ${1}_server
     outcome: $3
     provider: $2
-````
+```
 
 ## Using Docker
 

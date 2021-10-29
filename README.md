@@ -168,7 +168,7 @@ Additionally, default metrics conflict between the client libraries and the expo
 Instead, configure Prometheus to scrape your application directly, without the exporter in the middle.
 For batch or ephemeral jobs, use the [pushgateway](https://prometheus.io/docs/practices/pushing/) [integration](https://github.com/prometheus/client_python#exporting-to-a-pushgateway).
 If you absolutely must push, consider [PushProx](https://github.com/prometheus-community/PushProx) or the [Grafana agent](https://github.com/grafana/agent) instead.
-
+If you absolutely must push, consider the [Grafana agent](https://github.com/grafana/agent) instead.
 
 ## TLS and basic authentication
 
@@ -180,8 +180,7 @@ using the `--web.config.file` parameter. The format of the file is described
 [in the exporter-toolkit repository](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md).
 
 Note that the TLS and basic authentication settings affect all HTTP endpoints:
-/metrics for scraping, /probe for probing, and the web UI.
-
+/metrics for scraping, /probe for probing, and the web UI
 
 [circleci]: https://circleci.com/gh/prometheus/graphite_exporter
 [hub]: https://hub.docker.com/r/prom/graphite-exporter/

@@ -149,9 +149,7 @@ docker run -d -p 9108:9108 -p 9109:9109 -p 9109:9109/udp \
         prom/graphite-exporter --graphite.mapping-config=/tmp/graphite_mapping.conf
 ```
 
-## Importing Whisper data
-
-**EXPERIMENTAL**
+## **Experimental**: Importing Whisper data
 
 Import data from Graphite using the bundled `getool`.
 See `getool create-blocks --help` for usage.
@@ -160,6 +158,17 @@ To import long-term data in a reasonable amount of resources, increase the durat
 The `--block-duration` must be a power of two in hours, e.g. `4h`, `8h`, and so on.
 
 To merge the data into an existing Prometheus storage directory, start Prometheus with the `--storage.tsdb.allow-overlapping-blocks` flag.
+
+## Incompatibility with Graphite bridge
+
+This exporter does not work in combination with the [Java client](https://prometheus.github.io/client_java/io/prometheus/client/bridge/Graphite.html) or [Python client](https://github.com/prometheus/client_python#graphite) Graphite bridge.
+In the transition to the Graphite data model and back, information is lost.
+Additionally, default metrics conflict between the client libraries and the exporter.
+
+Instead, configure Prometheus to scrape your application directly, without the exporter in the middle.
+For batch or ephemeral jobs, use the [pushgateway](https://prometheus.io/docs/practices/pushing/) [integration](https://github.com/prometheus/client_python#exporting-to-a-pushgateway).
+If you absolutely must push, consider [PushProx](https://github.com/prometheus-community/PushProx) or the [Grafana agent](https://github.com/grafana/agent) instead.
+
 
 [circleci]: https://circleci.com/gh/prometheus/graphite_exporter
 [hub]: https://hub.docker.com/r/prom/graphite-exporter/

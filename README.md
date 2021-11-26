@@ -166,7 +166,21 @@ In the transition to the Graphite data model and back, information is lost.
 Additionally, default metrics conflict between the client libraries and the exporter.
 
 Instead, configure Prometheus to scrape your application directly, without the exporter in the middle.
-If you absolutely must push, consider the [Grafana agent](https://github.com/grafana/agent) instead.
+For batch or ephemeral jobs, use the [pushgateway](https://prometheus.io/docs/practices/pushing/) [integration](https://github.com/prometheus/client_python#exporting-to-a-pushgateway).
+If you absolutely must push, consider [PushProx](https://github.com/prometheus-community/PushProx) or the [Grafana agent](https://github.com/grafana/agent) instead.
+
+
+## TLS and basic authentication
+
+Graphite Exporter supports TLS and basic authentication. This enables better
+control of the various HTTP endpoints.
+
+To use TLS and/or basic authentication, you need to pass a configuration file
+using the `--web.config.file` parameter. The format of the file is described
+[in the exporter-toolkit repository](https://github.com/prometheus/exporter-toolkit/blob/master/docs/web-configuration.md).
+
+Note that the TLS and basic authentication settings affect all HTTP endpoints:
+/metrics for scraping, /probe for probing, and the web UI.
 
 
 ## TLS and basic authentication

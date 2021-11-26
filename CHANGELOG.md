@@ -1,3 +1,7 @@
+## 0.11.1 / 2021-11-26
+
+* [ENHANCEMENT] Build for windows/arm64 ([#174](https://github.com/prometheus/graphite_exporter/pull/174))
+
 ## 0.11.0 / 2021-09-01
 
 * [ENHANCEMENT] Add experimental tool for converting historical data ([#145](https://github.com/prometheus/graphite_exporter/pull/145))

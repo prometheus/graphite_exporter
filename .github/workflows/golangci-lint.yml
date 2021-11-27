@@ -17,11 +17,6 @@ on:
       - ".github/workflows/golangci-lint.yml"
       - ".golangci.yml"
 
-<<<<<<< HEAD
-
-
-=======
->>>>>>> 559a82c60a92bc107a88b7867d82d80ec4b95e50
 jobs:
   golangci:
     name: lint

@@ -1,3 +1,7 @@
+## 0.12.0 / 2021-12-01
+
+* [FEATURE] Support TLS on web UI and metrics ([#175](https://github.com/prometheus/graphite_exporter/pull/175))
+
 ## 0.11.1 / 2021-11-26
 
 * [ENHANCEMENT] Build for windows/arm64 ([#174](https://github.com/prometheus/graphite_exporter/pull/174))

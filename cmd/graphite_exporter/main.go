@@ -29,10 +29,10 @@ import (
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
 	"github.com/prometheus/common/version"
+	"github.com/prometheus/exporter-toolkit/web"
+	"github.com/prometheus/graphite_exporter/collector"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"gopkg.in/alecthomas/kingpin.v2"
-
-	"github.com/prometheus/graphite_exporter/collector"
 )
 
 var (
@@ -46,6 +46,7 @@ var (
 	cacheType       = kingpin.Flag("graphite.cache-type", "Metric mapping cache type. Valid options are \"lru\" and \"random\"").Default("lru").Enum("lru", "random")
 	dumpFSMPath     = kingpin.Flag("debug.dump-fsm", "The path to dump internal FSM generated for glob matching as Dot file.").Default("").String()
 	checkConfig     = kingpin.Flag("check-config", "Check configuration and exit.").Default("false").Bool()
+	configFile      = kingpin.Flag("web.config", "[EXPERIMENTAL] Path to config yaml file that can enable TLS or authentication.").Default("").String()
 )
 
 func init() {
@@ -170,6 +171,9 @@ func main() {
 	})
 
 	level.Info(logger).Log("msg", "Listening on "+*listenAddress)
-	level.Error(logger).Log("err", http.ListenAndServe(*listenAddress, nil))
-	os.Exit(1)
+	server := &http.Server{Addr: *listenAddress}
+	if err := web.ListenAndServe(server, *configFile, logger); err != nil {
+		level.Error(logger).Log("err", err)
+		os.Exit(1)
+	}
 }

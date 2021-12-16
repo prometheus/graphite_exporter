@@ -52,7 +52,7 @@ non-alphanumeric character except `_` and `:` is replaced with `_`.
 
 If you have a very large set of metrics you may want to skip the ones that don't
 match the mapping configuration. If that is the case you can force this behaviour
-using the `-graphite.mapping-strict-match` flag, and it will only store those metrics
+using the `--graphite.mapping-strict-match` flag, and it will only store those metrics
 you really want.
 
 An example mapping configuration:

@@ -17,9 +17,16 @@ import (
 	"math"
 	"sort"
 	"testing"
+	"time"
 
+	"github.com/go-graphite/go-whisper"
 	"github.com/stretchr/testify/require"
 )
+
+func init() {
+	// Pin go-whisper to a fixed timestamp so that the test data is in the window of retention.
+	whisper.Now = func() time.Time { return time.Unix(1640000000, 0) }
+}
 
 func TestListMetrics(t *testing.T) {
 	reader := NewReader("testdata")

@@ -1,3 +1,7 @@
+## 0.12.1 / 2022-05-06
+
+This is a maintenance release, built with Go 1.17.9 to address security issues.
+
 ## 0.12.0 / 2021-12-01
 
 * [FEATURE] Support TLS on web UI and metrics ([#175](https://github.com/prometheus/graphite_exporter/pull/175))
@@ -51,7 +55,7 @@ The changes for the timer type configuration do not affect this exporter as Grap
 This release updates several dependencies. Logging-related flags have changed.
 
 The metric mapping library is now at the level of [statsd exporter 0.14.1](https://github.com/prometheus/statsd_exporter/blob/master/CHANGELOG.md#0141--2010-01-13), bringing in various performance improvements. See the statsd exporter changelog for the detailed changes.
- 
+
 ## 0.6.2 / 2019-06-03
 
 * [CHANGE] Do not run as root in the Docker container by default ([#85](https://github.com/prometheus/graphite_exporter/pull/85))
@@ -112,7 +116,6 @@ Regular expressions can be used to match on Graphite metric names beyond extract
 
 * [FEATURE] Added flag to allow dropping of unmatched metrics
 * [ENHANCEMENT] Logging changes and standardisation
-
 
 ## 0.1.0 / 2015-05-05
 

@@ -198,12 +198,6 @@ func getFormatedBytes(bytes int64, humanReadable bool) string {
 }
 
 func backfill(maxSamplesInAppender int, inputDir, outputDir, mappingConfig string, strictMatch, humanReadable bool, blockDuration int64) (err error) {
-	var (
-		// Those do not really matter when backfilling.
-		cacheOption = mapper.WithCacheType("lru")
-		cacheSize   = 1
-	)
-
 	wdb := reader.NewReader(inputDir)
 	mint, maxt, err := wdb.GetMinAndMaxTimestamps()
 	if err != nil {
@@ -212,14 +206,12 @@ func backfill(maxSamplesInAppender int, inputDir, outputDir, mappingConfig strin
 	metricMapper := &mapper.MetricMapper{}
 
 	if mappingConfig != "" {
-		err := metricMapper.InitFromFile(mappingConfig, cacheSize, cacheOption)
+		err := metricMapper.InitFromFile(mappingConfig)
 		if err != nil {
 			logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
 			return err
 		}
-	} else {
-		metricMapper.InitCache(cacheSize, cacheOption)
 	}
 
 	return errors.Wrap(createBlocks(wdb, mint, maxt, blockDuration, maxSamplesInAppender, outputDir, metricMapper, strictMatch, humanReadable), "block creation")

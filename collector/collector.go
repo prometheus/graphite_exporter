@@ -261,6 +261,5 @@ func (s graphiteSample) String() string {
 
 type metricMapper interface {
 	GetMapping(string, mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool)
-	InitFromFile(string, int, ...mapper.CacheOption) error
-	InitCache(int, ...mapper.CacheOption)
+	InitFromFile(string) error
 }

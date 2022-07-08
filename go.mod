@@ -11,6 +11,7 @@ require (
 	github.com/prometheus/prometheus v1.8.2-0.20210119214810-e4487274853c
 	github.com/prometheus/statsd_exporter v0.16.0
 	github.com/stretchr/testify v1.6.1
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
 

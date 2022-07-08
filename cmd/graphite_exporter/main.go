@@ -32,6 +32,8 @@ import (
 	"github.com/prometheus/exporter-toolkit/web"
 	"github.com/prometheus/graphite_exporter/collector"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
+	"github.com/prometheus/statsd_exporter/pkg/mappercache/lru"
+	"github.com/prometheus/statsd_exporter/pkg/mappercache/randomreplacement"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -86,17 +88,20 @@ func main() {
 	prometheus.MustRegister(c)
 
 	metricMapper := &mapper.MetricMapper{}
-	cacheOption := mapper.WithCacheType(*cacheType)
-
 	if *mappingConfig != "" {
-		err := metricMapper.InitFromFile(*mappingConfig, *cacheSize, cacheOption)
+		err := metricMapper.InitFromFile(*mappingConfig)
 		if err != nil {
 			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
 			os.Exit(1)
 		}
-	} else {
-		metricMapper.InitCache(*cacheSize, cacheOption)
 	}
+
+	cache, err := getCache(*cacheSize, *cacheType, prometheus.DefaultRegisterer)
+	if err != nil {
+		level.Error(logger).Log("msg", "error initializing mapper cache", "err", err)
+		os.Exit(1)
+	}
+	metricMapper.UseCache(cache)
 
 	if *checkConfig {
 		level.Info(logger).Log("msg", "Configuration check successful, exiting")
@@ -176,4 +181,29 @@ func main() {
 		level.Error(logger).Log("err", err)
 		os.Exit(1)
 	}
+}
+
+// TODO(mr): this is copied verbatim from statsd_exporter/main.go. It should be a
+// convenience function in mappercache, but that caused an import cycle.
+func getCache(cacheSize int, cacheType string, registerer prometheus.Registerer) (mapper.MetricMapperCache, error) {
+	var cache mapper.MetricMapperCache
+	var err error
+	if cacheSize == 0 {
+		return nil, nil
+	} else {
+		switch cacheType {
+		case "lru":
+			cache, err = lru.NewMetricMapperLRUCache(registerer, cacheSize)
+		case "random":
+			cache, err = randomreplacement.NewMetricMapperRRCache(registerer, cacheSize)
+		default:
+			err = fmt.Errorf("unsupported cache type %q", cacheType)
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return cache, nil
 }

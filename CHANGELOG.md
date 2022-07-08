@@ -1,3 +1,11 @@
+## 0.12.2 / 2022-07-08
+
+* [CHANGE] Update all dependencies ([#193](https://github.com/prometheus/graphite_exporter/pull/193), [#194](https://github.com/prometheus/graphite_exporter/pull/194), [#195](https://github.com/prometheus/graphite_exporter/pull/195), [#196](https://github.com/prometheus/graphite_exporter/pull/196))
+
+This is a comprehensive housekeeping release, bringing all dependencies and the compiler version up to date.
+
+It imports a bug fix in the mapper, allowing metrics with multiple dashes in a row.
+
 ## 0.12.1 / 2022-05-06
 
 This is a maintenance release, built with Go 1.17.9 to address security issues.

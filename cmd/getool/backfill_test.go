@@ -18,7 +18,7 @@ package main
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"math"
 	"os"
 	"os/exec"
@@ -58,7 +58,7 @@ func TestBackfill(t *testing.T) {
 	stderr, err := cmd.StderrPipe()
 	require.NoError(t, err)
 	go func() {
-		slurp, _ := ioutil.ReadAll(stderr)
+		slurp, _ := io.ReadAll(stderr)
 		t.Log(string(slurp))
 	}()
 

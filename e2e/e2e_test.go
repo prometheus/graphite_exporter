@@ -15,7 +15,7 @@ package e2e
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -100,7 +100,7 @@ rspamd.spam_count 3 NOW`
 		t.Fatalf("get error: %v", err)
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("read error: %v", err)
 	}
@@ -183,7 +183,7 @@ rspamd.spam_count 3 NOW`
 		t.Fatalf("get error: %v", err)
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("read error: %v", err)
 	}
@@ -261,7 +261,7 @@ rspamd.actions;action2=greylist 0 NOW
 		t.Fatalf("get error: %v", err)
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("read error: %v", err)
 	}
@@ -339,7 +339,7 @@ a.b.c.d 4 NOW
 		t.Fatalf("get error: %v", err)
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("read error: %v", err)
 	}

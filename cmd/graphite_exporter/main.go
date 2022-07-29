@@ -87,7 +87,7 @@ func main() {
 	c := collector.NewGraphiteCollector(logger, *strictMatch, *sampleExpiry)
 	prometheus.MustRegister(c)
 
-	metricMapper := &mapper.MetricMapper{}
+	metricMapper := &mapper.MetricMapper{Logger: logger}
 	if *mappingConfig != "" {
 		err := metricMapper.InitFromFile(*mappingConfig)
 		if err != nil {

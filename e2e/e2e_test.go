@@ -271,3 +271,81 @@ rspamd.actions;action2=greylist 0 NOW
 		}
 	}
 }
+
+// Test to ensure that inconsistent label sets are accepted and exported correctly
+func TestBacktracking(t *testing.T) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	webAddr, graphiteAddr := fmt.Sprintf("127.0.0.1:%d", 9108), fmt.Sprintf("127.0.0.1:%d", 9109)
+	exporter := exec.Command(
+		filepath.Join(cwd, "..", "graphite_exporter"),
+		"--web.listen-address", webAddr,
+		"--graphite.listen-address", graphiteAddr,
+		"--graphite.mapping-config", filepath.Join(cwd, "fixtures", "backtrack.yml"),
+	)
+	err = exporter.Start()
+	if err != nil {
+		t.Fatalf("execution error: %v", err)
+	}
+	defer exporter.Process.Kill()
+
+	for i := 0; i < 20; i++ {
+		if i > 0 {
+			time.Sleep(1 * time.Second)
+		}
+		resp, err := http.Get("http://" + webAddr)
+		if err != nil {
+			continue
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+	}
+
+	now := time.Now()
+
+	input := `a.x.x.b 1 NOW
+a.x.y.b 2 NOW
+a.b.c.b 3 NOW
+a.b.c.d 4 NOW
+`
+	input = strings.NewReplacer("NOW", fmt.Sprintf("%d", now.Unix())).Replace(input)
+
+	output := []string{
+		"axxb{one=\"x\",two=\"x\"} 1",
+		"axxb{one=\"x\",two=\"y\"} 2",
+		"axxb{one=\"b\",two=\"c\"} 3",
+		"abcd 4",
+	}
+
+	conn, err := net.Dial("tcp", graphiteAddr)
+	if err != nil {
+		t.Fatalf("connection error: %v", err)
+	}
+	defer conn.Close()
+	_, err = conn.Write([]byte(input))
+	if err != nil {
+		t.Fatalf("write error: %v", err)
+	}
+
+	time.Sleep(5 * time.Second)
+
+	resp, err := http.Get("http://" + path.Join(webAddr, "metrics"))
+	if err != nil {
+		t.Fatalf("get error: %v", err)
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read error: %v", err)
+	}
+	for _, s := range output {
+		if !strings.Contains(string(b), s) {
+			t.Fatalf("Expected %q in %q – input: %q – time: %s", s, string(b), input, now)
+		}
+	}
+}

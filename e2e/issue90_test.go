@@ -16,7 +16,7 @@ package e2e
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -62,7 +62,7 @@ func TestIssue90(t *testing.T) {
 		}
 	}
 
-	testInputs, err := ioutil.ReadFile(filepath.Join(cwd, "fixtures", "issue90_in.txt"))
+	testInputs, err := os.ReadFile(filepath.Join(cwd, "fixtures", "issue90_in.txt"))
 	if err != nil {
 		t.Fatalf("failed to read input fixture: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestIssue90(t *testing.T) {
 		t.Fatalf("get error: %v", err)
 	}
 	defer resp.Body.Close()
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("read error: %v", err)
 	}

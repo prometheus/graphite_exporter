@@ -1,3 +1,10 @@
+## 0.12.3 / 2022-08-06
+
+* [BUGFIX] Fix crash on startup for some configurations ([#198](https://github.com/prometheus/graphite_exporter/pull/198))
+
+For mappings that require backtracking, 0.12.2 would crash on startup due to an uninitialized logger.
+If this affected you, consider [changing the order of rules](https://github.com/prometheus/statsd_exporter#ordering-glob-rules) or enabling unordered rules for better performance.
+
 ## 0.12.2 / 2022-07-08
 
 * [CHANGE] Update all dependencies ([#193](https://github.com/prometheus/graphite_exporter/pull/193), [#194](https://github.com/prometheus/graphite_exporter/pull/194), [#195](https://github.com/prometheus/graphite_exporter/pull/195), [#196](https://github.com/prometheus/graphite_exporter/pull/196))

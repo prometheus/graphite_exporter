@@ -1,3 +1,7 @@
+## 0.13.0 / 2022-10-25
+
+* [ENHANCEMENT] Support systemd socket activation ([#206](https://github.com/prometheus/graphite_exporter/pull/206))
+
 ## 0.12.3 / 2022-08-06
 
 * [BUGFIX] Fix crash on startup for some configurations ([#198](https://github.com/prometheus/graphite_exporter/pull/198))

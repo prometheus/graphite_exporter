@@ -1,3 +1,7 @@
+## 0.13.1 / 2022-12-05
+
+* Fix authentication bypass [GHSA-7rg2-cxvp-9p7p](https://github.com/advisories/GHSA-7rg2-cxvp-9p7p) ([#209](https://github.com/prometheus/graphite_exporter/pull/209))
+
 ## 0.13.0 / 2022-10-25
 
 * [ENHANCEMENT] Support systemd socket activation ([#206](https://github.com/prometheus/graphite_exporter/pull/206))

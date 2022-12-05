@@ -1,3 +1,7 @@
+## 0.12.4 / 2022-12-05
+
+* [SECURITY] Fix [GHSA-7rg2-cxvp-9p7p](https://github.com/advisories/GHSA-7rg2-cxvp-9p7p) (manual backport of [#209](https://github.com/prometheus/graphite_exporter/pull/209))
+
 ## 0.12.3 / 2022-08-06
 
 * [BUGFIX] Fix crash on startup for some configurations ([#198](https://github.com/prometheus/graphite_exporter/pull/198))

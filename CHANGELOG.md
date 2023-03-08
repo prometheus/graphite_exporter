@@ -1,3 +1,7 @@
+## 0.13.2 / 2023-03-08
+
+* [SECURITY] Update various dependencies ([#223](https://github.com/prometheus/graphite_exporter/pull/223) and others)
+
 ## 0.13.1 / 2022-12-05
 
 * [SECURITY] Fix authentication bypass [GHSA-7rg2-cxvp-9p7p](https://github.com/advisories/GHSA-7rg2-cxvp-9p7p) ([#209](https://github.com/prometheus/graphite_exporter/pull/209))

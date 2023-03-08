@@ -1,3 +1,7 @@
+## 0.13.3 / 2023-03-09
+
+Re-release due to CI issues, no functional change.
+
 ## 0.13.2 / 2023-03-08
 
 * [SECURITY] Update various dependencies ([#223](https://github.com/prometheus/graphite_exporter/pull/223) and others)

@@ -734,8 +734,8 @@ github.com/prometheus/procfs v0.9.0 h1:wzCHvIvM5SxWqYvwgVL7yJY8Lz3PKn49KQtpgMYJf
 github.com/prometheus/procfs v0.9.0/go.mod h1:+pB4zwohETzFnmlpe6yd2lSc+0/46IYZRB/chUwxUZY=
 github.com/prometheus/prometheus v1.8.2-0.20210119214810-e4487274853c h1:dBR10QK8wNm7pamMkrsUSDbk8YHWZGfHyZVocVT5Btc=
 github.com/prometheus/prometheus v1.8.2-0.20210119214810-e4487274853c/go.mod h1:pZyryEk2SoMVjRI6XFqZLW7B9vPevv8lqwESVYjP1WA=
-github.com/prometheus/statsd_exporter v0.23.0 h1:GEkriUCmARYh1gSA0gzpvmTg/oHMc5MfDFNlS/che4E=
-github.com/prometheus/statsd_exporter v0.23.0/go.mod h1:1itCY9XMa2p5pjO5HseGjs5cnaIA5qxLCYmn3OUna58=
+github.com/prometheus/statsd_exporter v0.23.1 h1:TiNAE1XevlZZrpSbmf51l/Ryl2Eek9rYh//KlvcNvKw=
+github.com/prometheus/statsd_exporter v0.23.1/go.mod h1:FFmnBRWf+HxX+PR+2fnc0ciBIONVAPJ6k4lqIbdqVxo=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/retailnext/hllpp v1.0.1-0.20180308014038-101a6d2f8b52/go.mod h1:RDpi1RftBQPUCDRw6SmxeaREsAaRKnOclghuzp/WRzc=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
@@ -1094,7 +1094,6 @@ golang.org/x/sys v0.0.0-20210917161153-d61c044b1678/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220114195835-da31bd327af9/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20220708085239-5a0f0661e09d/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.3.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.5.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

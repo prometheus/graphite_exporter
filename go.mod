@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.9.1
 	github.com/prometheus/prometheus v1.8.2-0.20210119214810-e4487274853c
 	github.com/prometheus/statsd_exporter v0.23.1
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 )
 
 require (

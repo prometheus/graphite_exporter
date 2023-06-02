@@ -1,3 +1,8 @@
+## 0.14.0 / 2023-06-02
+
+* [FEATURE] Support scaling parameter in mapping ([#235](https://github.com/prometheus/graphite_exporter/pull/235))
+* [SECURITY] Maintenance release, updating dependencies
+
 ## 0.13.3 / 2023-03-09
 
 Re-release due to CI issues, no functional change.

@@ -33,10 +33,11 @@ import (
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	"github.com/prometheus/exporter-toolkit/web/kingpinflag"
-	"github.com/prometheus/graphite_exporter/collector"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"github.com/prometheus/statsd_exporter/pkg/mappercache/lru"
 	"github.com/prometheus/statsd_exporter/pkg/mappercache/randomreplacement"
+
+	"github.com/prometheus/graphite_exporter/collector"
 )
 
 var (

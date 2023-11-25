@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"os"
@@ -29,12 +30,12 @@ import (
 	"github.com/alecthomas/units"
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
-	"github.com/pkg/errors"
-	"github.com/prometheus/graphite_exporter/reader"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/tsdb"
 	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
+
+	"github.com/prometheus/graphite_exporter/reader"
 )
 
 var invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
@@ -68,7 +69,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 			// original interval later.
 			w, err := tsdb.NewBlockWriter(log.NewNopLogger(), outputDir, 2*blockDuration)
 			if err != nil {
-				return errors.Wrap(err, "block writer")
+				return fmt.Errorf("block writer: %w", err)
 			}
 			defer func() {
 				err = tsdb_errors.NewMulti(err, w.Close()).Err()
@@ -104,7 +105,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 				}
 				for _, point := range points {
 					if _, err := app.Add(l, point.Timestamp, point.Value); err != nil {
-						return errors.Wrap(err, "add sample")
+						return fmt.Errorf("add sample: %w", err)
 					}
 
 					samplesCount++
@@ -116,7 +117,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 					// Therefore the old appender is committed and a new one is created.
 					// This prevents keeping too many samples lined up in an appender and thus in RAM.
 					if err := app.Commit(); err != nil {
-						return errors.Wrap(err, "commit")
+						return fmt.Errorf("commit: %w", err)
 					}
 
 					app = w.Appender(ctx)
@@ -125,15 +126,15 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 			}
 
 			if err := app.Commit(); err != nil {
-				return errors.Wrap(err, "commit")
+				return fmt.Errorf("commit: %w", err)
 			}
 
 			block, err := w.Flush(ctx)
-			switch err {
-			case nil:
+			switch {
+			case err == nil:
 				blocks, err := db.Blocks()
 				if err != nil {
-					return errors.Wrap(err, "get blocks")
+					return fmt.Errorf("get blocks: %w", err)
 				}
 				for _, b := range blocks {
 					if b.Meta().ULID == block {
@@ -142,20 +143,18 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 						break
 					}
 				}
-			case tsdb.ErrNoSeriesAppended:
+			case errors.Is(err, tsdb.ErrNoSeriesAppended):
 			default:
-				return errors.Wrap(err, "flush")
+				return fmt.Errorf("flush: %w", err)
 			}
 
 			return nil
 		}()
-
 		if err != nil {
-			return errors.Wrap(err, "process blocks")
+			return fmt.Errorf("process blocks: %w", err)
 		}
 	}
 	return nil
-
 }
 
 func printBlocks(blocks []tsdb.BlockReader, writeHeader, humanReadable bool) {
@@ -201,7 +200,7 @@ func backfill(maxSamplesInAppender int, inputDir, outputDir, mappingConfig strin
 	wdb := reader.NewReader(inputDir)
 	mint, maxt, err := wdb.GetMinAndMaxTimestamps()
 	if err != nil {
-		return errors.Wrap(err, "getting min and max timestamp")
+		return fmt.Errorf("getting min and max timestamp: %w", err)
 	}
 	metricMapper := &mapper.MetricMapper{}
 
@@ -214,7 +213,10 @@ func backfill(maxSamplesInAppender int, inputDir, outputDir, mappingConfig strin
 		}
 	}
 
-	return errors.Wrap(createBlocks(wdb, mint, maxt, blockDuration, maxSamplesInAppender, outputDir, metricMapper, strictMatch, humanReadable), "block creation")
+	if err := createBlocks(wdb, mint, maxt, blockDuration, maxSamplesInAppender, outputDir, metricMapper, strictMatch, humanReadable); err != nil {
+		return fmt.Errorf("block creation: %w", err)
+	}
+	return nil
 }
 
 func backfillWhisper(inputDir, outputDir, mappingConfig string, strictMatch, humanReadable bool, optBlockDuration time.Duration) (err error) {
@@ -224,8 +226,8 @@ func backfillWhisper(inputDir, outputDir, mappingConfig string, strictMatch, hum
 		return fmt.Errorf("invalid block duration: %s", optBlockDuration.String())
 	}
 
-	if err := os.MkdirAll(outputDir, 0777); err != nil {
-		return errors.Wrap(err, "create output dir")
+	if err := os.MkdirAll(outputDir, 0o777); err != nil {
+		return fmt.Errorf("create output dir: %w", err)
 	}
 
 	return backfill(5000, inputDir, outputDir, mappingConfig, strictMatch, humanReadable, blockDuration)

@@ -19,8 +19,10 @@ import (
 	"testing"
 )
 
-var testPath = os.Args[0]
-var tmpData = filepath.Join(os.TempDir(), "graphite_expoter_test")
+var (
+	testPath = os.Args[0]
+	tmpData  = filepath.Join(os.TempDir(), "graphite_expoter_test")
+)
 
 func TestMain(m *testing.M) {
 	for i, arg := range os.Args {

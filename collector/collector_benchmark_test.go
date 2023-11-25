@@ -65,11 +65,8 @@ type mockMapper struct {
 }
 
 func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
-
 	mapping := mapper.MetricMapping{Name: m.name, Action: m.action}
-
 	return &mapping, m.labels, m.present
-
 }
 
 func (m *mockMapper) InitFromFile(string) error {
@@ -106,9 +103,11 @@ func benchmarkProcessLine(b *testing.B, line string) {
 func BenchmarkProcessLineMixed1(b *testing.B) {
 	benchmarkProcessLines(1, b, input)
 }
+
 func BenchmarkProcessLineMixed5(b *testing.B) {
 	benchmarkProcessLines(5, b, input)
 }
+
 func BenchmarkProcessLineMixed50(b *testing.B) {
 	benchmarkProcessLines(50, b, input)
 }
@@ -117,6 +116,7 @@ func BenchmarkProcessLineMixed50(b *testing.B) {
 func BenchmarkProcessLineUntagged(b *testing.B) {
 	benchmarkProcessLine(b, untaggedLine)
 }
+
 func BenchmarkProcessLineTagged(b *testing.B) {
 	benchmarkProcessLine(b, taggedLine)
 }

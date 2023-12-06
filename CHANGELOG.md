@@ -1,3 +1,7 @@
+## 0.15.0 / 2023-12-06
+
+* [FEATURE] Upgrade mapping library to bring in `honor_labels` support from prometheus/statsd_exporter#521
+
 ## 0.14.1 / 2023-12-06
 
 * [SECURITY] Maintenance release, updating dependencies & building with Go 1.21

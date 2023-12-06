@@ -35,7 +35,10 @@ they are last pushed to. This is configurable with the `--graphite.sample-expiry
 
 ## Graphite Tags
 
-The graphite_exporter accepts metrics in the [tagged carbon format](https://graphite.readthedocs.io/en/latest/tags.html). Labels specified in the mapping configuration take precedence over tags in the metric. In the case where there are valid and invalid tags supplied in one metric, the invalid tags will be dropped and the `graphite_tag_parse_failures` counter will be incremented. The exporter accepts inconsistent label sets, but this may cause issues querying the data in Prometheus.
+The graphite_exporter accepts metrics in the [tagged carbon format](https://graphite.readthedocs.io/en/latest/tags.html). In the case where there are valid and invalid tags supplied in one metric, the invalid tags will be dropped and the `graphite_tag_parse_failures` counter will be incremented. The exporter accepts inconsistent label sets, but this may cause issues querying the data in Prometheus.
+
+By default, labels explicitly specified in configuration take precedence over labels from the metric. To set the label from the metric instead, use [`honor_labels`](https://github.com/prometheus/statsd_exporter/#honor-labels).
+
 
 ## Metric Mapping and Configuration
 

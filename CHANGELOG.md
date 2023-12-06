@@ -1,3 +1,7 @@
+## 0.14.1 / 2023-12-06
+
+* [SECURITY] Maintenance release, updating dependencies & building with Go 1.21
+
 ## 0.14.0 / 2023-06-02
 
 * [FEATURE] Support scaling parameter in mapping ([#235](https://github.com/prometheus/graphite_exporter/pull/235))

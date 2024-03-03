@@ -37,52 +37,120 @@ func TestBackfill(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
+	for _, tt := range []struct {
+		name          string
+		metricName    string
+		labels        map[string]string
+		mappingConfig string
+		strictMatch   bool
+	}{
+		{
+			name:       "default",
+			metricName: "load_cpu_cpu0",
+		},
+		{
+			name: "with_mapping",
+			mappingConfig: `
+mappings:
+- match: "load.*.*"
+  name: load_$1
+  labels:
+    cpu: $2`,
+			metricName: "load_cpu",
+			labels:     map[string]string{"cpu": "cpu0"},
+		},
+		{
+			name:        "strict_match",
+			strictMatch: true,
+			mappingConfig: `
+mappings:
+- match: load.*.*
+  name: load_$1
+  labels:
+    cpu: $2`,
+			metricName: "load_cpu",
+			labels:     map[string]string{"cpu": "cpu0"},
+		},
+	} {
+		tt := tt // TODO(matthias): remove after upgrading to Go 1.22
+		t.Run(tt.name, func(t *testing.T) {
 
-	var (
-		metricTime = int(time.Now().Add(-30 * time.Minute).Unix())
-		whisperDir = filepath.Join(tmpData, "whisper", "load", "cpu")
-	)
+			var (
+				metricTime = int(time.Now().Add(-30 * time.Minute).Unix())
+				tmpData    = filepath.Join(os.TempDir(), "graphite_exporter_test")
+				whisperDir = filepath.Join(tmpData, "whisper", "load", "cpu")
+			)
 
-	require.NoError(t, os.MkdirAll(whisperDir, 0o777))
-	retentions, err := whisper.ParseRetentionDefs("1s:3600")
-	require.NoError(t, err)
-	wsp, err := whisper.Create(filepath.Join(whisperDir, "cpu0.wsp"), retentions, whisper.Sum, 0.5)
-	require.NoError(t, err)
-	require.NoError(t, wsp.Update(1234.5678, metricTime-1))
-	require.NoError(t, wsp.Update(12345.678, metricTime))
-	require.NoError(t, wsp.Close())
+			defer os.RemoveAll(tmpData)
 
-	cmd := exec.Command(testPath, "-test.main", "create-blocks", filepath.Join(tmpData, "whisper"), filepath.Join(tmpData, "data"))
+			require.NoError(t, os.MkdirAll(whisperDir, 0o777))
+			retentions, err := whisper.ParseRetentionDefs("1s:3600")
+			require.NoError(t, err)
+			wsp, err := whisper.Create(filepath.Join(whisperDir, "cpu0.wsp"), retentions, whisper.Sum, 0.5)
+			require.NoError(t, err)
+			require.NoError(t, wsp.Update(1234.5678, metricTime-1))
+			require.NoError(t, wsp.Update(12345.678, metricTime))
+			require.NoError(t, wsp.Close())
 
-	// Log stderr in case of failure.
-	stderr, err := cmd.StderrPipe()
-	require.NoError(t, err)
-	go func() {
-		slurp, _ := io.ReadAll(stderr)
-		t.Log(string(slurp))
-	}()
+			arguments := []string{
+				"-test.main",
+				"create-blocks",
+			}
 
-	err = cmd.Start()
-	require.NoError(t, err)
+			if tt.mappingConfig != "" {
+				cfgFile := filepath.Join(tmpData, "mapping.yaml")
+				err := os.WriteFile(cfgFile, []byte(tt.mappingConfig), 0644)
+				require.NoError(t, err)
+				arguments = append(arguments, "--graphite.mapping-config", cfgFile)
+			}
 
-	err = cmd.Wait()
-	require.NoError(t, err)
+			if tt.strictMatch {
+				arguments = append(arguments, "--graphite.mapping-strict-match")
+			}
 
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpData, "data", "wal"), 0o777))
+			arguments = append(arguments, filepath.Join(tmpData, "whisper"), filepath.Join(tmpData, "data"))
 
-	db, err := tsdb.OpenDBReadOnly(filepath.Join(tmpData, "data"), nil)
-	require.NoError(t, err)
-	q, err := db.Querier(context.TODO(), math.MinInt64, math.MaxInt64)
-	require.NoError(t, err)
+			cmd := exec.Command(testPath, arguments...)
 
-	s := queryAllSeries(t, q)
+			// Log stderr in case of failure.
+			stderr, err := cmd.StderrPipe()
+			require.NoError(t, err)
+			go func() {
+				slurp, _ := io.ReadAll(stderr)
+				t.Log(string(slurp))
+			}()
 
-	require.Equal(t, labels.FromStrings("__name__", "load_cpu_cpu0"), s[0].Labels)
-	require.Equal(t, 1000*int64(metricTime-1), s[0].Timestamp)
-	require.Equal(t, 1234.5678, s[0].Value)
-	require.Equal(t, labels.FromStrings("__name__", "load_cpu_cpu0"), s[1].Labels)
-	require.Equal(t, 1000*int64(metricTime), s[1].Timestamp)
-	require.Equal(t, 12345.678, s[1].Value)
+			err = cmd.Start()
+			require.NoError(t, err)
+
+			err = cmd.Wait()
+			require.NoError(t, err)
+
+			require.NoError(t, os.MkdirAll(filepath.Join(tmpData, "data", "wal"), 0o777))
+
+			db, err := tsdb.OpenDBReadOnly(filepath.Join(tmpData, "data"), nil)
+			require.NoError(t, err)
+			q, err := db.Querier(context.TODO(), math.MinInt64, math.MaxInt64)
+			require.NoError(t, err)
+
+			s := queryAllSeries(t, q)
+
+			// XXX: getool creates labels with the __name__ last, different from
+			// the sorting produced by labels.New. Is this a problem?
+			ll := labels.FromMap(tt.labels)
+			ll = append(ll, labels.Label{
+				Name:  "__name__",
+				Value: tt.metricName,
+			})
+
+			require.Equal(t, ll, s[0].Labels)
+			require.Equal(t, 1000*int64(metricTime-1), s[0].Timestamp)
+			require.Equal(t, 1234.5678, s[0].Value)
+			require.Equal(t, ll, s[1].Labels)
+			require.Equal(t, 1000*int64(metricTime), s[1].Timestamp)
+			require.Equal(t, 12345.678, s[1].Value)
+		})
+	}
 }
 
 type backfillSample struct {

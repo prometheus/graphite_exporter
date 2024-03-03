@@ -26,6 +26,7 @@ import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
+	clientVersion "github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
@@ -52,7 +53,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(version.NewCollector("graphite_exporter"))
+	prometheus.MustRegister(clientVersion.NewCollector("graphite_exporter"))
 }
 
 func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string, logger log.Logger) error {

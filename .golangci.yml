@@ -6,7 +6,6 @@ run:
 linters:
   enable:
     - errorlint
-    - gofumpt
     - goimports
     - staticcheck
   disable-all: true

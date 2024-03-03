@@ -98,5 +98,4 @@ func TestIssue90(t *testing.T) {
 	if resp.StatusCode != 200 {
 		t.Errorf("unexpected status, want 200, got %v, body: %s", resp.Status, b)
 	}
-
 }

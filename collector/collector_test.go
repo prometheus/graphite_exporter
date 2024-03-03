@@ -75,7 +75,6 @@ func TestParseNameAndTags(t *testing.T) {
 }
 
 func TestProcessLine(t *testing.T) {
-
 	type testCase struct {
 		line           string
 		name           string

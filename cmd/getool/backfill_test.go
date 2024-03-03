@@ -43,7 +43,7 @@ func TestBackfill(t *testing.T) {
 		whisperDir = filepath.Join(tmpData, "whisper", "load", "cpu")
 	)
 
-	require.NoError(t, os.MkdirAll(whisperDir, 0777))
+	require.NoError(t, os.MkdirAll(whisperDir, 0o777))
 	retentions, err := whisper.ParseRetentionDefs("1s:3600")
 	require.NoError(t, err)
 	wsp, err := whisper.Create(filepath.Join(whisperDir, "cpu0.wsp"), retentions, whisper.Sum, 0.5)
@@ -68,7 +68,7 @@ func TestBackfill(t *testing.T) {
 	err = cmd.Wait()
 	require.NoError(t, err)
 
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpData, "data", "wal"), 0777))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpData, "data", "wal"), 0o777))
 
 	db, err := tsdb.OpenDBReadOnly(filepath.Join(tmpData, "data"), nil)
 	require.NoError(t, err)

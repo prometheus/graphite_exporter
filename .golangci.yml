@@ -5,6 +5,12 @@ run:
 # Run only staticcheck and goimports for now. Additional linters will be enabled one-by-one.
 linters:
   enable:
-  - staticcheck
-  - goimports
+    - errorlint
+    - gofumpt
+    - goimports
+    - staticcheck
   disable-all: true
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/prometheus/graphite_exporter

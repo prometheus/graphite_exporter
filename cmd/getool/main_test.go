@@ -15,13 +15,11 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 )
 
 var (
 	testPath = os.Args[0]
-	tmpData  = filepath.Join(os.TempDir(), "graphite_expoter_test")
 )
 
 func TestMain(m *testing.M) {
@@ -33,7 +31,5 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	exitCode := m.Run()
-	os.RemoveAll(tmpData)
-	os.Exit(exitCode)
+	os.Exit(m.Run())
 }

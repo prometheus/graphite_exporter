@@ -1,3 +1,8 @@
+## 0.15.1 / 2024-03-22
+
+* [SECURITY] Update dependencies, including google.golang.org/protobuf for CVE-2024-24786
+* [CHANGE] Use go standard errors instead of deprecated github.com/pkg/errors ([#242](https://github.com/prometheus/graphite_exporter/pull/242))
+
 ## 0.15.0 / 2023-12-06
 
 * [FEATURE] Upgrade mapping library to bring in `honor_labels` support from prometheus/statsd_exporter#521

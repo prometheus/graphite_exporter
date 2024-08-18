@@ -1,3 +1,7 @@
+## 0.15.2 / 2024-03-22
+
+* [SECURITY] Update Go to 1.22, update dependencies
+
 ## 0.15.1 / 2024-03-22
 
 * [SECURITY] Update dependencies, including google.golang.org/protobuf for CVE-2024-24786

@@ -1,8 +1,7 @@
 module github.com/prometheus/graphite_exporter
 
 go 1.21
-
-toolchain go1.22.0
+toolchain go1.22.5
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
@@ -10,8 +9,8 @@ require (
 	github.com/go-graphite/go-whisper v0.0.0-20230526115116-e3110f57c01c
 	github.com/go-kit/log v0.2.1
 	github.com/prometheus/client_golang v1.20.4
-	github.com/prometheus/common v0.55.0
-	github.com/prometheus/exporter-toolkit v0.11.0
+	github.com/prometheus/common v0.58.0
+	github.com/prometheus/exporter-toolkit v0.13.0
 	github.com/prometheus/prometheus v1.8.2-0.20210119214810-e4487274853c
 	github.com/prometheus/statsd_exporter v0.27.1
 	github.com/stretchr/testify v1.9.0
@@ -28,6 +27,8 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/mdlayher/socket v0.4.1 // indirect
+	github.com/mdlayher/vsock v1.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/oklog/ulid v1.3.1 // indirect

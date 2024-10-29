@@ -161,20 +161,26 @@ func main() {
 		}
 	}()
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
-			http.NotFound(w, r)
-			return
+	if *metricsPath != "/" {
+		landingConfig := web.LandingConfig{
+			Name:        "Graphite Exporter",
+			Description: "Prometheus Graphite Exporter",
+			ExtraHTML:   `<p>Accepting plaintext Graphite samples over TCP and UDP on ` + *graphiteAddress + `</p>`,
+			Version:     version.Info(),
+			Links: []web.LandingLinks{
+				{
+					Address: *metricsPath,
+					Text:    "Metrics",
+				},
+			},
 		}
-		w.Write([]byte(`<html>
-      <head><title>Graphite Exporter</title></head>
-      <body>
-      <h1>Graphite Exporter</h1>
-      <p>Accepting plaintext Graphite samples over TCP and UDP on ` + *graphiteAddress + `</p>
-      <p><a href="` + *metricsPath + `">Metrics</a></p>
-      </body>
-      </html>`))
-	})
+		landingPage, err := web.NewLandingPage(landingConfig)
+		if err != nil {
+			logger.Error(err.Error())
+			os.Exit(1)
+		}
+		http.Handle("/", landingPage)
+	}
 
 	server := &http.Server{}
 	if err := web.ListenAndServe(server, toolkitFlags, logger); err != nil {

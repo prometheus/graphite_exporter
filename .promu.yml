@@ -1,7 +1,7 @@
 go:
     # Whenever the Go version is updated here, .travis.yml and
     # .circle/config.yml should also be updated.
-    version: 1.22
+    version: 1.23
 repository:
     path: github.com/prometheus/graphite_exporter
 build:
@@ -10,7 +10,6 @@ build:
           path: ./cmd/graphite_exporter
         - name: getool
           path: ./cmd/getool
-    flags: -a -tags netgo
     ldflags: |
         -X github.com/prometheus/common/version.Version={{.Version}}
         -X github.com/prometheus/common/version.Revision={{.Revision}}

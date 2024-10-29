@@ -19,13 +19,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 )
 
 var (
-	logger = log.NewNopLogger()
+	logger = promslog.NewNopLogger()
 	c      = NewGraphiteCollector(logger, false, 5*time.Minute)
 
 	now = time.Now()

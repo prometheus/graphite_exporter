@@ -28,9 +28,8 @@ import (
 	"time"
 
 	"github.com/alecthomas/units"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
-	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb"
 	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
@@ -43,7 +42,7 @@ var invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSamplesInAppender int, outputDir string, metricMapper *mapper.MetricMapper, strictMatch, humanReadable bool) (returnErr error) {
 	mint = blockDuration * (mint / blockDuration)
 
-	db, err := tsdb.OpenDBReadOnly(outputDir, nil)
+	db, err := tsdb.OpenDBReadOnly(outputDir, "", nil)
 	if err != nil {
 		return err
 	}
@@ -67,7 +66,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 			// also need to append samples throughout the whole block range. To allow that, we
 			// pretend that the block is twice as large here, but only really add sample in the
 			// original interval later.
-			w, err := tsdb.NewBlockWriter(log.NewNopLogger(), outputDir, 2*blockDuration)
+			w, err := tsdb.NewBlockWriter(promslog.NewNopLogger(), outputDir, 2*blockDuration)
 			if err != nil {
 				return fmt.Errorf("block writer: %w", err)
 			}
@@ -104,7 +103,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 					return err
 				}
 				for _, point := range points {
-					if _, err := app.Add(l, point.Timestamp, point.Value); err != nil {
+					if _, err := app.Append(0, l, point.Timestamp, point.Value); err != nil {
 						return fmt.Errorf("add sample: %w", err)
 					}
 
@@ -207,8 +206,8 @@ func backfill(maxSamplesInAppender int, inputDir, outputDir, mappingConfig strin
 	if mappingConfig != "" {
 		err := metricMapper.InitFromFile(mappingConfig)
 		if err != nil {
-			logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
-			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
+			logger := promslog.New(&promslog.Config{})
+			logger.Error("Error loading metric mapping config", "err", err)
 			return err
 		}
 	}

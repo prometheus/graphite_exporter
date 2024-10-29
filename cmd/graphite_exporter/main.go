@@ -17,19 +17,18 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	clientVersion "github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/promlog"
-	"github.com/prometheus/common/promlog/flag"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/common/promslog/flag"
 	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	"github.com/prometheus/exporter-toolkit/web/kingpinflag"
@@ -57,7 +56,7 @@ func init() {
 	prometheus.MustRegister(clientVersion.NewCollector("graphite_exporter"))
 }
 
-func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string, logger log.Logger) error {
+func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string, logger *slog.Logger) error {
 	if mapper.FSM == nil {
 		return fmt.Errorf("no FSM available to be dumped, possibly because the mapping contains regex patterns")
 	}
@@ -65,25 +64,25 @@ func dumpFSM(mapper *mapper.MetricMapper, dumpFilename string, logger log.Logger
 	if err != nil {
 		return err
 	}
-	level.Info(logger).Log("msg", "Start dumping FSM", "to", dumpFilename)
+	logger.Info("Start dumping FSM", "to", dumpFilename)
 	w := bufio.NewWriter(f)
 	mapper.FSM.DumpFSM(w)
 	w.Flush()
 	f.Close()
-	level.Info(logger).Log("msg", "Finish dumping FSM")
+	logger.Info("Finish dumping FSM")
 	return nil
 }
 
 func main() {
-	promlogConfig := &promlog.Config{}
-	flag.AddFlags(kingpin.CommandLine, promlogConfig)
+	promslogConfig := &promslog.Config{}
+	flag.AddFlags(kingpin.CommandLine, promslogConfig)
 	kingpin.Version(version.Print("graphite_exporter"))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
-	logger := promlog.New(promlogConfig)
+	logger := promslog.New(promslogConfig)
 
-	level.Info(logger).Log("msg", "Starting graphite_exporter", "version_info", version.Info())
-	level.Info(logger).Log("build_context", version.BuildContext())
+	logger.Info("Starting graphite_exporter", "version_info", version.Info())
+	logger.Info(version.BuildContext())
 
 	http.Handle(*metricsPath, promhttp.Handler())
 	c := collector.NewGraphiteCollector(logger, *strictMatch, *sampleExpiry)
@@ -93,27 +92,27 @@ func main() {
 	if *mappingConfig != "" {
 		err := metricMapper.InitFromFile(*mappingConfig)
 		if err != nil {
-			level.Error(logger).Log("msg", "Error loading metric mapping config", "err", err)
+			logger.Error("Error loading metric mapping config", "err", err)
 			os.Exit(1)
 		}
 	}
 
 	cache, err := getCache(*cacheSize, *cacheType, prometheus.DefaultRegisterer)
 	if err != nil {
-		level.Error(logger).Log("msg", "error initializing mapper cache", "err", err)
+		logger.Error("error initializing mapper cache", "err", err)
 		os.Exit(1)
 	}
 	metricMapper.UseCache(cache)
 
 	if *checkConfig {
-		level.Info(logger).Log("msg", "Configuration check successful, exiting")
+		logger.Info("Configuration check successful, exiting")
 		return
 	}
 
 	if *dumpFSMPath != "" {
 		err := dumpFSM(metricMapper, *dumpFSMPath, logger)
 		if err != nil {
-			level.Error(logger).Log("msg", "Error dumping FSM", "err", err)
+			logger.Error("Error dumping FSM", "err", err)
 			os.Exit(1)
 		}
 	}
@@ -122,14 +121,14 @@ func main() {
 
 	tcpSock, err := net.Listen("tcp", *graphiteAddress)
 	if err != nil {
-		level.Error(logger).Log("msg", "Error binding to TCP socket", "err", err)
+		logger.Error("Error binding to TCP socket", "err", err)
 		os.Exit(1)
 	}
 	go func() {
 		for {
 			conn, err := tcpSock.Accept()
 			if err != nil {
-				level.Error(logger).Log("msg", "Error accepting TCP connection", "err", err)
+				logger.Error("Error accepting TCP connection", "err", err)
 				continue
 			}
 			go func() {
@@ -141,12 +140,12 @@ func main() {
 
 	udpAddress, err := net.ResolveUDPAddr("udp", *graphiteAddress)
 	if err != nil {
-		level.Error(logger).Log("msg", "Error resolving UDP address", "err", err)
+		logger.Error("Error resolving UDP address", "err", err)
 		os.Exit(1)
 	}
 	udpSock, err := net.ListenUDP("udp", udpAddress)
 	if err != nil {
-		level.Error(logger).Log("msg", "Error listening to UDP address", "err", err)
+		logger.Error("Error listening to UDP address", "err", err)
 		os.Exit(1)
 	}
 	go func() {
@@ -155,7 +154,7 @@ func main() {
 			buf := make([]byte, 65536)
 			chars, srcAddress, err := udpSock.ReadFromUDP(buf)
 			if err != nil {
-				level.Error(logger).Log("msg", "Error reading UDP packet", "from", srcAddress, "err", err)
+				logger.Error("Error reading UDP packet", "from", srcAddress, "err", err)
 				continue
 			}
 			go c.ProcessReader(bytes.NewReader(buf[0:chars]))
@@ -179,7 +178,7 @@ func main() {
 
 	server := &http.Server{}
 	if err := web.ListenAndServe(server, toolkitFlags, logger); err != nil {
-		level.Error(logger).Log("err", err)
+		logger.Error("error running HTTP server", "err", err)
 		os.Exit(1)
 	}
 }

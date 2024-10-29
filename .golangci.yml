@@ -1,5 +1,5 @@
-run:
-  skip-dirs:
+issues:
+  exclude-dirs:
     - e2e
 
 # Run only staticcheck and goimports for now. Additional linters will be enabled one-by-one.
@@ -8,6 +8,7 @@ linters:
     - errorlint
     - goimports
     - staticcheck
+    - sloglint
   disable-all: true
 
 linters-settings:

@@ -17,6 +17,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log/slog"
 	"math"
 	_ "net/http/pprof"
 	"regexp"
@@ -25,8 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 )
@@ -40,14 +39,14 @@ type graphiteCollector struct {
 	sampleCh           chan *graphiteSample
 	lineCh             chan string
 	strictMatch        bool
-	logger             log.Logger
+	logger             *slog.Logger
 	tagParseFailures   prometheus.Counter
 	lastProcessed      prometheus.Gauge
 	sampleExpiryMetric prometheus.Gauge
 	sampleExpiry       time.Duration
 }
 
-func NewGraphiteCollector(logger log.Logger, strictMatch bool, sampleExpiry time.Duration) *graphiteCollector {
+func NewGraphiteCollector(logger *slog.Logger, strictMatch bool, sampleExpiry time.Duration) *graphiteCollector {
 	c := &graphiteCollector{
 		sampleCh:    make(chan *graphiteSample),
 		lineCh:      make(chan string),
@@ -128,11 +127,11 @@ func (c *graphiteCollector) parseMetricNameAndTags(name string) (string, prometh
 
 func (c *graphiteCollector) processLine(line string) {
 	line = strings.TrimSpace(line)
-	level.Debug(c.logger).Log("msg", "Incoming line", "line", line)
+	c.logger.Debug("Incoming line", "line", line)
 
 	parts := strings.Split(line, " ")
 	if len(parts) != 3 {
-		level.Info(c.logger).Log("msg", "Invalid part count", "parts", len(parts), "line", line)
+		c.logger.Info("Invalid part count", "parts", len(parts), "line", line)
 		return
 	}
 
@@ -140,7 +139,7 @@ func (c *graphiteCollector) processLine(line string) {
 
 	parsedName, labels, err := c.parseMetricNameAndTags(originalName)
 	if err != nil {
-		level.Debug(c.logger).Log("msg", "Invalid tags", "line", line, "err", err.Error())
+		c.logger.Debug("Invalid tags", "line", line, "err", err.Error())
 	}
 
 	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
@@ -163,12 +162,12 @@ func (c *graphiteCollector) processLine(line string) {
 
 	value, err := strconv.ParseFloat(parts[1], 64)
 	if err != nil {
-		level.Info(c.logger).Log("msg", "Invalid value", "line", line)
+		c.logger.Info("Invalid value", "line", line)
 		return
 	}
 	timestamp, err := strconv.ParseFloat(parts[2], 64)
 	if err != nil {
-		level.Info(c.logger).Log("msg", "Invalid timestamp", "line", line)
+		c.logger.Info("Invalid timestamp", "line", line)
 		return
 	}
 	sample := graphiteSample{
@@ -180,7 +179,7 @@ func (c *graphiteCollector) processLine(line string) {
 		Help:         fmt.Sprintf("Graphite metric %s", name),
 		Timestamp:    time.Unix(int64(timestamp), int64(math.Mod(timestamp, 1.0)*1e9)),
 	}
-	level.Debug(c.logger).Log("msg", "Processing sample", "sample", sample)
+	c.logger.Debug("Processing sample", "sample", sample)
 	c.lastProcessed.Set(float64(time.Now().UnixNano()) / 1e9)
 	c.sampleCh <- &sample
 }

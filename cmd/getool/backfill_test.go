@@ -27,9 +27,10 @@ import (
 	"time"
 
 	"github.com/go-graphite/go-whisper"
-	"github.com/prometheus/prometheus/pkg/labels"
+	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"github.com/prometheus/prometheus/tsdb"
+	"github.com/prometheus/prometheus/tsdb/chunkenc"
 	"github.com/stretchr/testify/require"
 )
 
@@ -128,9 +129,9 @@ mappings:
 
 			require.NoError(t, os.MkdirAll(filepath.Join(tmpData, "data", "wal"), 0o777))
 
-			db, err := tsdb.OpenDBReadOnly(filepath.Join(tmpData, "data"), nil)
+			db, err := tsdb.OpenDBReadOnly(filepath.Join(tmpData, "data"), "", nil)
 			require.NoError(t, err)
-			q, err := db.Querier(context.TODO(), math.MinInt64, math.MaxInt64)
+			q, err := db.Querier(math.MinInt64, math.MaxInt64)
 			require.NoError(t, err)
 
 			s := queryAllSeries(t, q)
@@ -160,13 +161,13 @@ type backfillSample struct {
 }
 
 func queryAllSeries(t *testing.T, q storage.Querier) []backfillSample {
-	ss := q.Select(false, nil, labels.MustNewMatcher(labels.MatchRegexp, "", ".*"))
+	ss := q.Select(context.Background(), false, nil, labels.MustNewMatcher(labels.MatchRegexp, "", ".*"))
 	samples := []backfillSample{}
 	for ss.Next() {
 		series := ss.At()
-		it := series.Iterator()
+		it := series.Iterator(nil)
 		require.NoError(t, it.Err())
-		for it.Next() {
+		for it.Next() != chunkenc.ValNone {
 			ts, v := it.At()
 			samples = append(samples, backfillSample{Timestamp: ts, Value: v, Labels: series.Labels()})
 		}

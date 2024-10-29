@@ -18,14 +18,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseNameAndTags(t *testing.T) {
-	logger := log.NewNopLogger()
+	logger := promslog.NewNopLogger()
 	c := NewGraphiteCollector(logger, false, 5*time.Minute)
 	type testCase struct {
 		line       string
@@ -204,7 +204,7 @@ func TestProcessLine(t *testing.T) {
 		},
 	}
 
-	c := NewGraphiteCollector(log.NewNopLogger(), false, 5*time.Minute)
+	c := NewGraphiteCollector(promslog.NewNopLogger(), false, 5*time.Minute)
 
 	for _, testCase := range testCases {
 		if testCase.mappingPresent {

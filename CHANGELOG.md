@@ -1,3 +1,7 @@
+## 0.16.0 / 2024-10-29
+
+* [CHANGE] Replace logging with Go slog library #277
+
 ## 0.15.2 / 2024-03-22
 
 * [SECURITY] Update Go to 1.22, update dependencies

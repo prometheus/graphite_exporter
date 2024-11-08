@@ -8,7 +8,7 @@ require (
 	github.com/go-graphite/go-whisper v0.0.0-20230526115116-e3110f57c01c
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/common v0.60.1
-	github.com/prometheus/exporter-toolkit v0.13.0
+	github.com/prometheus/exporter-toolkit v0.13.1
 	github.com/prometheus/prometheus v0.300.0-rc.0
 	github.com/prometheus/statsd_exporter v0.28.0
 	github.com/stretchr/testify v1.9.0

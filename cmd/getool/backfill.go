@@ -23,6 +23,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 	"text/tabwriter"
 	"time"
@@ -85,10 +86,6 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 				}
 
 				l := make(labels.Labels, 0)
-				// add mapping labels to parsed labels·
-				for k, v := range mappingLabels {
-					l = append(l, labels.Label{Name: k, Value: v})
-				}
 
 				var name string
 				if mappingPresent {
@@ -97,6 +94,16 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 					name = invalidMetricChars.ReplaceAllString(m, "_")
 				}
 				l = append(l, labels.Label{Name: "__name__", Value: name})
+
+				keys := make([]string, 0, len(mappingLabels))
+				for k := range mappingLabels {
+					keys = append(keys, k)
+				}
+				sort.Strings(keys)
+				// add mapping labels to parsed labels·
+				for _, k := range keys {
+					l = append(l, labels.Label{Name: k, Value: mappingLabels[k]})
+				}
 
 				points, err := input.Points(m, t, tsUpper)
 				if err != nil {

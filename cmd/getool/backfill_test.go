@@ -56,9 +56,10 @@ mappings:
 - match: "load.*.*"
   name: load_$1
   labels:
+    state: idle
     cpu: $2`,
 			metricName: "load_cpu",
-			labels:     map[string]string{"cpu": "cpu0"},
+			labels:     map[string]string{"cpu": "cpu0", "state": "idle"},
 		},
 		{
 			name:        "strict_match",
@@ -136,13 +137,15 @@ mappings:
 
 			s := queryAllSeries(t, q)
 
-			// XXX: getool creates labels with the __name__ last, different from
-			// the sorting produced by labels.New. Is this a problem?
 			ll := labels.FromMap(tt.labels)
-			ll = append(ll, labels.Label{
-				Name:  "__name__",
-				Value: tt.metricName,
-			})
+
+			//Prepend the label __name__ to match expected order
+			ll = append([]labels.Label{
+				{
+					Name:  "__name__",
+					Value: tt.metricName,
+				},
+			}, ll...)
 
 			require.Equal(t, ll, s[0].Labels)
 			require.Equal(t, 1000*int64(metricTime-1), s[0].Timestamp)

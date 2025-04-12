@@ -40,6 +40,7 @@ type graphiteCollector struct {
 	lineCh             chan string
 	strictMatch        bool
 	logger             *slog.Logger
+	droppedSamples     prometheus.Counter
 	tagParseFailures   prometheus.Counter
 	lastProcessed      prometheus.Gauge
 	sampleExpiryMetric prometheus.Gauge
@@ -54,6 +55,11 @@ func NewGraphiteCollector(logger *slog.Logger, strictMatch bool, sampleExpiry ti
 		samples:     map[string]*graphiteSample{},
 		strictMatch: strictMatch,
 		logger:      logger,
+		droppedSamples: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "graphite_dropped_samples_total",
+				Help: "Total count of samples dropped due to mapping configuration",
+			}),
 		tagParseFailures: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "graphite_tag_parse_failures",
@@ -150,6 +156,8 @@ func (c *graphiteCollector) processLine(line string) {
 	}
 
 	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && c.strictMatch) {
+		c.logger.Debug("Dropped line", "line", line)
+		c.droppedSamples.Inc()
 		return
 	}
 
@@ -216,6 +224,7 @@ func (c *graphiteCollector) processSamples() {
 
 // Collect implements prometheus.Collector.
 func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
+	c.droppedSamples.Collect(ch)
 	c.lastProcessed.Collect(ch)
 	c.sampleExpiryMetric.Collect(ch)
 	c.tagParseFailures.Collect(ch)
@@ -243,6 +252,7 @@ func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 // Describe implements prometheus.Collector but does not yield a description
 // for Graphite metrics, allowing inconsistent label sets
 func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
+	c.droppedSamples.Describe(ch)
 	c.lastProcessed.Describe(ch)
 	c.sampleExpiryMetric.Describe(ch)
 	c.tagParseFailures.Describe(ch)

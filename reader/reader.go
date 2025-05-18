@@ -109,7 +109,7 @@ func (w *whisperReader) GetMinAndMaxTimestamps() (int64, int64, error) {
 		}
 	}
 	if min > max {
-		return 0, 0, fmt.Errorf("no valid sample found (min: %d, max: %v).", min, metrics)
+		return 0, 0, fmt.Errorf("no valid sample found (min: %d, max: %v)", min, metrics)
 	}
 	return int64(1000 * min), int64(1000 * max), nil
 }

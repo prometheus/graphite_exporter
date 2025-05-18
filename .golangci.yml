@@ -1,16 +1,33 @@
-issues:
-  exclude-dirs:
-    - e2e
-
-# Run only staticcheck and goimports for now. Additional linters will be enabled one-by-one.
+version: "2"
 linters:
+  default: none
   enable:
     - errorlint
-    - goimports
-    - staticcheck
     - sloglint
-  disable-all: true
-
-linters-settings:
-  goimports:
-    local-prefixes: github.com/prometheus/graphite_exporter
+    - staticcheck
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - e2e
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/prometheus/graphite_exporter
+  exclusions:
+    generated: lax
+    paths:
+      - e2e
+      - third_party$
+      - builtin$
+      - examples$

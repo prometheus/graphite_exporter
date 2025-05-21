@@ -165,6 +165,10 @@ func (c *graphiteCollector) processLine(line string) {
 		c.logger.Info("Invalid value", "line", line)
 		return
 	}
+	if mappingPresent && mapping.Scale.Set {
+		value *= mapping.Scale.Val
+	}
+
 	timestamp, err := strconv.ParseFloat(parts[2], 64)
 	if err != nil {
 		c.logger.Info("Invalid timestamp", "line", line)

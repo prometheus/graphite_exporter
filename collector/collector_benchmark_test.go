@@ -62,10 +62,15 @@ type mockMapper struct {
 	present bool
 	name    string
 	action  mapper.ActionType
+	scale   mapper.MaybeFloat64
 }
 
 func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
-	mapping := mapper.MetricMapping{Name: m.name, Action: m.action}
+	mapping := mapper.MetricMapping{
+		Name:   m.name,
+		Action: m.action,
+		Scale:  m.scale,
+	}
 	return &mapping, m.labels, m.present
 }
 

@@ -85,6 +85,7 @@ func TestProcessLine(t *testing.T) {
 		willFail       bool
 		action         mapper.ActionType
 		strict         bool
+		scale          mapper.MaybeFloat64
 	}
 
 	testCases := map[string]testCase{
@@ -202,6 +203,17 @@ func TestProcessLine(t *testing.T) {
 			mappingPresent: true,
 			value:          float64(9003),
 		},
+		"scaled metric": {
+			line: "my.scaled.metric 9001 1534620625",
+			name: "my_scaled_metric",
+			scale: mapper.MaybeFloat64{
+				Set: true,
+				Val: 1024,
+			},
+			sampleLabels:   prometheus.Labels{},
+			mappingPresent: true,
+			value:          float64(9001) * 1024,
+		},
 	}
 
 	c := NewGraphiteCollector(promslog.NewNopLogger(), false, 5*time.Minute)
@@ -213,6 +225,7 @@ func TestProcessLine(t *testing.T) {
 				labels:  testCase.mappingLabels,
 				action:  testCase.action,
 				present: testCase.mappingPresent,
+				scale:   testCase.scale,
 			}
 		} else {
 			c.mapper = &mockMapper{

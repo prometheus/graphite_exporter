@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b
 	github.com/go-graphite/go-whisper v0.0.0-20230526115116-e3110f57c01c
 	github.com/prometheus/client_golang v1.22.0
-	github.com/prometheus/common v0.64.0
+	github.com/prometheus/common v0.65.0
 	github.com/prometheus/exporter-toolkit v0.13.1
 	github.com/prometheus/prometheus v0.300.1
 	github.com/prometheus/statsd_exporter v0.28.0

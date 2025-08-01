@@ -140,12 +140,9 @@ mappings:
 			ll := labels.FromMap(tt.labels)
 
 			//Prepend the label __name__ to match expected order
-			ll = append([]labels.Label{
-				{
-					Name:  "__name__",
-					Value: tt.metricName,
-				},
-			}, ll...)
+			builder := labels.NewBuilder(ll)
+			builder.Set("__name__", tt.metricName)
+			ll = builder.Labels()
 
 			require.Equal(t, ll, s[0].Labels)
 			require.Equal(t, 1000*int64(metricTime-1), s[0].Timestamp)

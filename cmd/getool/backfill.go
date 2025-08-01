@@ -85,15 +85,15 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 					continue
 				}
 
-				l := make(labels.Labels, 0)
-
 				var name string
 				if mappingPresent {
 					name = invalidMetricChars.ReplaceAllString(mapping.Name, "_")
 				} else {
 					name = invalidMetricChars.ReplaceAllString(m, "_")
 				}
-				l = append(l, labels.Label{Name: "__name__", Value: name})
+
+				builder := labels.NewBuilder(labels.EmptyLabels())
+				builder.Set("__name__", name)
 
 				keys := make([]string, 0, len(mappingLabels))
 				for k := range mappingLabels {
@@ -102,8 +102,9 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 				sort.Strings(keys)
 				// add mapping labels to parsed labels·
 				for _, k := range keys {
-					l = append(l, labels.Label{Name: k, Value: mappingLabels[k]})
+					builder.Set(k, mappingLabels[k])
 				}
+				l := builder.Labels()
 
 				points, err := input.Points(m, t, tsUpper)
 				if err != nil {

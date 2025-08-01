@@ -1,3 +1,7 @@
+## 0.17.0 / Unreleased
+
+* [ENHANCEMENT] getool: sort labels in blocks for Mimir compatibility #294
+
 ## 0.16.0 / 2024-10-29
 
 * [CHANGE] Replace logging with Go slog library #277

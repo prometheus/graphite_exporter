@@ -1,5 +1,6 @@
 ## 0.17.0 / Unreleased
 
+* [FEATURE] Add metric and debug log for dropped samples #301
 * [ENHANCEMENT] getool: sort labels in blocks for Mimir compatibility #294
 
 ## 0.16.0 / 2024-10-29

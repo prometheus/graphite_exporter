@@ -1,6 +1,6 @@
 # Graphite Exporter
 
-[![CircleCI](https://circleci.com/gh/prometheus/graphite_exporter/tree/master.svg?style=shield)][circleci]
+[![Build Status](https://github.com/prometheus/graphite_exporter/actions/workflows/ci.yml/badge.svg)](https://github.com/prometheus/graphite_exporter/actions/workflows/ci.yml)
 [![Docker Repository on Quay](https://quay.io/repository/prometheus/graphite-exporter/status)][quay]
 [![Docker Pulls](https://img.shields.io/docker/pulls/prom/graphite-exporter.svg?maxAge=604800)][hub]
 

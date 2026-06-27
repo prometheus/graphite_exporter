@@ -32,7 +32,6 @@ import (
 	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/tsdb"
-	tsdb_errors "github.com/prometheus/prometheus/tsdb/errors"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 
 	"github.com/prometheus/graphite_exporter/reader"
@@ -48,7 +47,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 		return err
 	}
 	defer func() {
-		returnErr = tsdb_errors.NewMulti(returnErr, db.Close()).Err()
+		returnErr = errors.Join(returnErr, db.Close())
 	}()
 
 	var wroteHeader bool
@@ -72,7 +71,7 @@ func createBlocks(input reader.DBReader, mint, maxt, blockDuration int64, maxSam
 				return fmt.Errorf("block writer: %w", err)
 			}
 			defer func() {
-				err = tsdb_errors.NewMulti(err, w.Close()).Err()
+				err = errors.Join(err, w.Close())
 			}()
 
 			ctx := context.Background()

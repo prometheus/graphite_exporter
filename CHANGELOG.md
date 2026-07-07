@@ -1,4 +1,6 @@
-## 0.17.0 / 2026-07-02
+## Unreleased
+
+## 0.17.0 / 2026-07-08
 
 * [FEATURE] Add metric and debug log for dropped samples #301
 * [FEATURE] Support scale param in metric mapping #298

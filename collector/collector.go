@@ -32,6 +32,17 @@ import (
 
 var invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 
+// validMetricName checks that a metric name conforms to Prometheus naming rules.
+// Returns true if the name is valid, false otherwise.
+func validMetricName(name string) bool {
+	if name == "" {
+		return false
+	}
+	// Prometheus metric names must match [a-zA-Z_:][a-zA-Z0-9_:]*
+	validName := regexp.MustCompile(`^[a-zA-Z_:][a-zA-Z0-9_:]*$`)
+	return validName.MatchString(name)
+}
+
 type graphiteCollector struct {
 	samples            map[string]*graphiteSample
 	mu                 *sync.Mutex
@@ -239,6 +250,10 @@ func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 	ageLimit := time.Now().Add(-c.sampleExpiry)
 	for _, sample := range samples {
 		if ageLimit.After(sample.Timestamp) {
+			continue
+		}
+		if !validMetricName(sample.Name) {
+			c.logger.Info("Skipping sample with invalid metric name", "name", sample.Name)
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(

@@ -46,7 +46,7 @@ func TestIssue61(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}
@@ -129,7 +129,7 @@ func TestIssue111(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}
@@ -214,7 +214,7 @@ func TestInconsistentLabelsE2E(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}
@@ -292,7 +292,7 @@ func TestBacktracking(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}

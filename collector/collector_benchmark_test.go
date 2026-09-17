@@ -65,7 +65,7 @@ type mockMapper struct {
 	scale   mapper.MaybeFloat64
 }
 
-func (m *mockMapper) GetMapping(metricName string, metricType mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
+func (m *mockMapper) GetMapping(_ string, _ mapper.MetricType) (*mapper.MetricMapping, prometheus.Labels, bool) {
 	mapping := mapper.MetricMapping{
 		Name:   m.name,
 		Action: m.action,
@@ -87,7 +87,7 @@ func init() {
 
 func benchmarkProcessLines(times int, b *testing.B, lines []string) {
 	for n := 0; n < b.N; n++ {
-		for i := 0; i < times; i++ {
+		for range times {
 			for _, l := range lines {
 				c.processLine(l)
 			}

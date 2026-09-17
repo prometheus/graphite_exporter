@@ -18,9 +18,7 @@ import (
 	"testing"
 )
 
-var (
-	testPath = os.Args[0]
-)
+var testPath = os.Args[0]
 
 func TestMain(m *testing.M) {
 	for i, arg := range os.Args {

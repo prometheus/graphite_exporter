@@ -3,6 +3,8 @@ linters:
   default: none
   enable:
     - errorlint
+    - modernize
+    - revive
     - sloglint
     - staticcheck
   exclusions:
@@ -12,22 +14,16 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    paths:
-      - e2e
-      - third_party$
-      - builtin$
-      - examples$
 formatters:
   enable:
+    - gofumpt
     - goimports
   settings:
+    gofumpt:
+      extra:
+        group-params: true
     goimports:
       local-prefixes:
         - github.com/prometheus/graphite_exporter
   exclusions:
     generated: lax
-    paths:
-      - e2e
-      - third_party$
-      - builtin$
-      - examples$

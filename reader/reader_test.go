@@ -47,11 +47,11 @@ func TestListMetrics(t *testing.T) {
 
 func TestGetMinAndMaxTimestamp(t *testing.T) {
 	reader := NewReader("testdata")
-	min, max, err := reader.GetMinAndMaxTimestamps()
+	minTS, maxTS, err := reader.GetMinAndMaxTimestamps()
 	require.NoError(t, err)
 
-	require.True(t, min > math.MinInt64)
-	require.Equal(t, int64(1611068400000), max)
+	require.True(t, minTS > math.MinInt64)
+	require.Equal(t, int64(1611068400000), maxTS)
 }
 
 func TestGetPoints(t *testing.T) {

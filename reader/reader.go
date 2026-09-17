@@ -49,7 +49,7 @@ type whisperReader struct {
 
 func (w *whisperReader) Metrics() ([]string, error) {
 	metrics := make([]string, 0)
-	err := filepath.Walk(w.path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(w.path, func(path string, _ os.FileInfo, _ error) error {
 		if !strings.HasSuffix(path, ".wsp") {
 			return nil
 		}
@@ -76,8 +76,8 @@ func (w *whisperReader) opendb(metric string) (*whisper.Whisper, error) {
 func (w *whisperReader) GetMinAndMaxTimestamps() (int64, int64, error) {
 	var (
 		// Go-Graphite timestamps are int32.
-		min = math.MaxInt32
-		max = math.MinInt32
+		sampleMin = math.MaxInt32
+		sampleMax = math.MinInt32
 	)
 	metrics, err := w.Metrics()
 	if err != nil {
@@ -96,11 +96,11 @@ func (w *whisperReader) GetMinAndMaxTimestamps() (int64, int64, error) {
 			if math.IsNaN(sample.Value) {
 				continue
 			}
-			if sample.Time < min {
-				min = sample.Time
+			if sample.Time < sampleMin {
+				sampleMin = sample.Time
 			}
-			if sample.Time > max {
-				max = sample.Time
+			if sample.Time > sampleMax {
+				sampleMax = sample.Time
 			}
 		}
 		err = wdb.Close()
@@ -108,10 +108,10 @@ func (w *whisperReader) GetMinAndMaxTimestamps() (int64, int64, error) {
 			return 0, 0, err
 		}
 	}
-	if min > max {
-		return 0, 0, fmt.Errorf("no valid sample found (min: %d, max: %v)", min, metrics)
+	if sampleMin > sampleMax {
+		return 0, 0, fmt.Errorf("no valid sample found (min: %d, max: %v)", sampleMin, metrics)
 	}
-	return int64(1000 * min), int64(1000 * max), nil
+	return int64(1000 * sampleMin), int64(1000 * sampleMax), nil
 }
 
 func (w *whisperReader) Points(metric string, from, until int64) ([]Point, error) {

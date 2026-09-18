@@ -1,4 +1,4 @@
-// Copyright 2021 The Prometheus Authors
+// Copyright The Prometheus Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -12,7 +12,6 @@
 // limitations under the License.
 
 //go:build !aix
-// +build !aix
 
 package main
 
@@ -74,9 +73,7 @@ mappings:
 			labels:     map[string]string{"cpu": "cpu0"},
 		},
 	} {
-		tt := tt // TODO(matthias): remove after upgrading to Go 1.22
 		t.Run(tt.name, func(t *testing.T) {
-
 			var (
 				metricTime = int(time.Now().Add(-30 * time.Minute).Unix())
 				tmpData    = filepath.Join(os.TempDir(), "graphite_exporter_test")
@@ -101,7 +98,7 @@ mappings:
 
 			if tt.mappingConfig != "" {
 				cfgFile := filepath.Join(tmpData, "mapping.yaml")
-				err := os.WriteFile(cfgFile, []byte(tt.mappingConfig), 0644)
+				err := os.WriteFile(cfgFile, []byte(tt.mappingConfig), 0o644)
 				require.NoError(t, err)
 				arguments = append(arguments, "--graphite.mapping-config", cfgFile)
 			}
@@ -139,7 +136,7 @@ mappings:
 
 			ll := labels.FromMap(tt.labels)
 
-			//Prepend the label __name__ to match expected order
+			// Prepend the label __name__ to match expected order
 			builder := labels.NewBuilder(ll)
 			builder.Set("__name__", tt.metricName)
 			ll = builder.Labels()

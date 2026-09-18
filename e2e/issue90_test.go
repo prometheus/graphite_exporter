@@ -48,7 +48,7 @@ func TestIssue90(t *testing.T) {
 	}
 	defer exporter.Process.Kill()
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		if i > 0 {
 			time.Sleep(1 * time.Second)
 		}

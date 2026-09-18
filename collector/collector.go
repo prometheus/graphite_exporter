@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"maps"
 	"math"
-	_ "net/http/pprof"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,7 +32,7 @@ import (
 
 var invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 
-type graphiteCollector struct {
+type GraphiteCollector struct {
 	samples            map[string]*graphiteSample
 	mu                 *sync.Mutex
 	mapper             metricMapper
@@ -47,8 +47,8 @@ type graphiteCollector struct {
 	sampleExpiry       time.Duration
 }
 
-func NewGraphiteCollector(logger *slog.Logger, strictMatch bool, sampleExpiry time.Duration) *graphiteCollector {
-	c := &graphiteCollector{
+func NewGraphiteCollector(logger *slog.Logger, strictMatch bool, sampleExpiry time.Duration) *GraphiteCollector {
+	c := &GraphiteCollector{
 		sampleCh:    make(chan *graphiteSample),
 		lineCh:      make(chan string),
 		mu:          &sync.Mutex{},
@@ -85,7 +85,7 @@ func NewGraphiteCollector(logger *slog.Logger, strictMatch bool, sampleExpiry ti
 	return c
 }
 
-func (c *graphiteCollector) ProcessReader(reader io.Reader) {
+func (c *GraphiteCollector) ProcessReader(reader io.Reader) {
 	lineScanner := bufio.NewScanner(reader)
 	for {
 		if ok := lineScanner.Scan(); !ok {
@@ -95,17 +95,17 @@ func (c *graphiteCollector) ProcessReader(reader io.Reader) {
 	}
 }
 
-func (c *graphiteCollector) SetMapper(m metricMapper) {
+func (c *GraphiteCollector) SetMapper(m metricMapper) {
 	c.mapper = m
 }
 
-func (c *graphiteCollector) processLines() {
+func (c *GraphiteCollector) processLines() {
 	for line := range c.lineCh {
 		c.processLine(line)
 	}
 }
 
-func (c *graphiteCollector) parseMetricNameAndTags(name string) (string, prometheus.Labels, error) {
+func (c *GraphiteCollector) parseMetricNameAndTags(name string) (string, prometheus.Labels, error) {
 	var err error
 
 	labels := make(prometheus.Labels)
@@ -131,7 +131,7 @@ func (c *graphiteCollector) parseMetricNameAndTags(name string) (string, prometh
 	return parsedName, labels, err
 }
 
-func (c *graphiteCollector) processLine(line string) {
+func (c *GraphiteCollector) processLine(line string) {
 	line = strings.TrimSpace(line)
 	c.logger.Debug("Incoming line", "line", line)
 
@@ -151,9 +151,7 @@ func (c *graphiteCollector) processLine(line string) {
 	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
 
 	// add mapping labels to parsed labels
-	for k, v := range mappingLabels {
-		labels[k] = v
-	}
+	maps.Copy(labels, mappingLabels)
 
 	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && c.strictMatch) {
 		c.logger.Debug("Dropped line", "line", line)
@@ -196,7 +194,7 @@ func (c *graphiteCollector) processLine(line string) {
 	c.sampleCh <- &sample
 }
 
-func (c *graphiteCollector) processSamples() {
+func (c *GraphiteCollector) processSamples() {
 	ticker := time.NewTicker(time.Minute).C
 
 	for {
@@ -223,7 +221,7 @@ func (c *graphiteCollector) processSamples() {
 }
 
 // Collect implements prometheus.Collector.
-func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
+func (c GraphiteCollector) Collect(ch chan<- prometheus.Metric) {
 	c.droppedSamples.Collect(ch)
 	c.lastProcessed.Collect(ch)
 	c.sampleExpiryMetric.Collect(ch)
@@ -251,7 +249,7 @@ func (c graphiteCollector) Collect(ch chan<- prometheus.Metric) {
 
 // Describe implements prometheus.Collector but does not yield a description
 // for Graphite metrics, allowing inconsistent label sets
-func (c graphiteCollector) Describe(ch chan<- *prometheus.Desc) {
+func (c GraphiteCollector) Describe(ch chan<- *prometheus.Desc) {
 	c.droppedSamples.Describe(ch)
 	c.lastProcessed.Describe(ch)
 	c.sampleExpiryMetric.Describe(ch)

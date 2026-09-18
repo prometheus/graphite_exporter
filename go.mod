@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b
-	github.com/go-graphite/go-whisper v0.0.0-20230526115116-e3110f57c01c
+	github.com/go-graphite/go-whisper v0.0.0-20260914194205-23d1891703f1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/common v0.71.0
 	github.com/prometheus/exporter-toolkit v0.19.0

@@ -240,7 +240,7 @@ func TestProcessLine(t *testing.T) {
 	c.sampleCh <- nil
 	for name, k := range testCases {
 		t.Run(name, func(t *testing.T) {
-			originalName := strings.Split(k.line, " ")[0]
+			originalName, _, _ := strings.Cut(k.line, " ")
 			sample := c.samples[originalName]
 			if k.willFail {
 				assert.Nil(t, sample, "Found %s", k.name)

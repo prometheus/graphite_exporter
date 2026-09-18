@@ -196,19 +196,18 @@ func getCache(cacheSize int, cacheType string, registerer prometheus.Registerer)
 	var err error
 	if cacheSize == 0 {
 		return nil, nil
-	} else {
-		switch cacheType {
-		case "lru":
-			cache, err = lru.NewMetricMapperLRUCache(registerer, cacheSize)
-		case "random":
-			cache, err = randomreplacement.NewMetricMapperRRCache(registerer, cacheSize)
-		default:
-			err = fmt.Errorf("unsupported cache type %q", cacheType)
-		}
+	}
+	switch cacheType {
+	case "lru":
+		cache, err = lru.NewMetricMapperLRUCache(registerer, cacheSize)
+	case "random":
+		cache, err = randomreplacement.NewMetricMapperRRCache(registerer, cacheSize)
+	default:
+		err = fmt.Errorf("unsupported cache type %q", cacheType)
+	}
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return cache, nil

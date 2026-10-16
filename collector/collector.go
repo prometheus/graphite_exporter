@@ -239,11 +239,19 @@ func (c GraphiteCollector) Collect(ch chan<- prometheus.Metric) {
 		if ageLimit.After(sample.Timestamp) {
 			continue
 		}
-		ch <- prometheus.MustNewConstMetric(
-			prometheus.NewDesc(sample.Name, sample.Help, []string{}, sample.Labels),
-			sample.Type,
-			sample.Value,
-		)
+		desc := prometheus.NewDesc(sample.Name, sample.Help, []string{}, sample.Labels)
+		if desc == nil {
+			c.droppedSamples.Inc()
+			c.logger.Warn("Skipping sample with invalid metric name", "name", sample.Name)
+			continue
+		}
+		metric, err := prometheus.NewConstMetric(desc, sample.Type, sample.Value)
+		if err != nil {
+			c.droppedSamples.Inc()
+			c.logger.Warn("Skipping sample due to invalid metric", "name", sample.Name, "err", err)
+			continue
+		}
+		ch <- metric
 	}
 }
 

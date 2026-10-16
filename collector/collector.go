@@ -21,6 +21,7 @@ import (
 	"maps"
 	"math"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,6 +34,7 @@ import (
 var invalidMetricChars = regexp.MustCompile("[^a-zA-Z0-9_:]")
 
 type GraphiteCollector struct {
+	// samples is keyed by Prometheus identity (metric name + labels).
 	samples            map[string]*graphiteSample
 	mu                 *sync.Mutex
 	mapper             metricMapper
@@ -204,7 +206,10 @@ func (c *GraphiteCollector) processSamples() {
 				return
 			}
 			c.mu.Lock()
-			c.samples[sample.OriginalName] = sample
+			key := sample.identity()
+			if existing, ok := c.samples[key]; !ok || !existing.Timestamp.After(sample.Timestamp) {
+				c.samples[key] = sample
+			}
 			c.mu.Unlock()
 		case <-ticker:
 			// Garbage collect expired samples.
@@ -264,6 +269,18 @@ type graphiteSample struct {
 	Value        float64
 	Type         prometheus.ValueType
 	Timestamp    time.Time
+}
+
+func (s graphiteSample) identity() string {
+	var b strings.Builder
+	b.WriteString(s.Name)
+	for _, k := range slices.Sorted(maps.Keys(s.Labels)) {
+		b.WriteByte(0)
+		b.WriteString(k)
+		b.WriteByte(0)
+		b.WriteString(s.Labels[k])
+	}
+	return b.String()
 }
 
 func (s graphiteSample) String() string {

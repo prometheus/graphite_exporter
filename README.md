@@ -47,18 +47,18 @@ By default, labels explicitly specified in configuration take precedence over la
 ### YAML Config
 
 The graphite_exporter can be configured to translate specific dot-separated
-graphite metrics into labeled Prometheus metrics via YAML configuration file.  This file shares syntax and logic with [statsd_exporter](https://github.com/prometheus/statsd_exporter).  Please follow the statsd_exporter documentation for usage information.  However, graphite_exporter does not support *all* parsing features at this time.  Any feature based on the 'timer_type' option will not function.  Otherwise, regex matching, groups, match/drop behavior, should work as expected.
+Graphite metrics into labeled Prometheus metrics via a YAML configuration file.
+This file shares syntax and logic with
+[statsd_exporter](https://github.com/prometheus/statsd_exporter). However,
+graphite_exporter does not support all parsing features. Features based on the
+`timer_type` option do not function. Regex matching, capture groups, and map/drop
+actions work as described below.
 
-Metrics that don't match any mapping in the configuration file are translated
-into Prometheus metrics without any labels and with names in which every
-non-alphanumeric character except `_` and `:` is replaced with `_`.
+#### Glob matching
 
-If you have a very large set of metrics you may want to skip the ones that don't
-match the mapping configuration. If that is the case you can force this behaviour
-using the `--graphite.mapping-strict-match` flag, and it will only store those metrics
-you really want.
-
-An example mapping configuration:
+The default and fastest match type is `glob`. Each `*` captures one dot-separated
+component, which can be referenced as `$1`, `$2`, and so on in the metric name or
+labels.
 
 ```yaml
 mappings:
@@ -75,15 +75,9 @@ mappings:
     job: ${1}_server
     outcome: $3
     provider: $2
-- match: 'servers\.(.*)\.networking\.subnetworks\.transmissions\.([a-z0-9-]+)\.(.*)'
-  match_type: regex
-  name: 'servers_networking_transmissions_${3}'
-  labels: 
-    hostname: ${1}
-    device: ${2}
 ```
 
-This would transform these example graphite metrics into Prometheus metrics as
+These mappings transform Graphite metrics into Prometheus metrics as
 follows:
 
 ```console
@@ -92,13 +86,86 @@ test.dispatcher.FooProcessor.send.success
 
 foo_product.signup.facebook.failure
   => signup_events_total{provider="facebook", outcome="failure", job="foo_product_server"}
-
-test.web-server.foo.bar
-  => test_web__server_foo_bar{}
-
-servers.rack-003-server-c4de.networking.subnetworks.transmissions.eth0.failure.mean_rate
-  => servers_networking_transmissions_failure_mean_rate{device="eth0",hostname="rack-003-server-c4de"}
 ```
+
+#### Regular expression matching
+
+Use `match_type: regex` when glob matching cannot express the required structure.
+Capture groups use the same `$1` or `${1}` references as glob mappings. Single
+quotes around the YAML value keep regular expression backslashes literal.
+
+Glob mappings are always evaluated before regex mappings, regardless of their
+order in the file. Regex mappings are then evaluated in order, and the first
+match wins. Prefer glob mappings where possible because regex mappings are
+evaluated one by one.
+
+For example:
+
+```yaml
+mappings:
+- match: '^servers\.([^.]+)\.networking\.subnetworks\.transmissions\.([a-z0-9-]+)\.(.+)$'
+  match_type: regex
+  name: 'servers_networking_transmissions_${3}'
+  labels:
+    hostname: '${1}'
+    device: '${2}'
+```
+
+This mapping produces:
+
+```console
+servers.rack-003-server-c4de.networking.subnetworks.transmissions.eth0.failure.mean_rate
+  => servers_networking_transmissions_failure_mean_rate{device="eth0", hostname="rack-003-server-c4de"}
+```
+
+#### Handling unmatched metrics
+
+By default, metrics that do not match any mapping are still exported without
+labels. Every character in their name other than letters, digits, `_`, and `:`
+is replaced with `_`:
+
+```console
+test.web-server.foo.bar
+  => test_web_server_foo_bar{}
+```
+
+To drop every unmatched metric, start graphite_exporter with
+`--graphite.mapping-strict-match`. Metrics dropped by strict matching increment
+`graphite_dropped_samples_total`.
+
+During a mapping rollout, a final regex catch-all can retain unmatched metrics
+and expose their original Graphite names:
+
+```yaml
+mappings:
+# Add specific glob and regex mappings above this rule.
+- match: '.+'
+  match_type: regex
+  name: '$0'
+  labels:
+    graphite_metric_name: '$0'
+```
+
+For example, `test.web-server.foo.bar` is exported as
+`test_web_server_foo_bar{graphite_metric_name="test.web-server.foo.bar"}`. The
+catch-all must be the last regex mapping. It also counts as a match when
+`--graphite.mapping-strict-match` is enabled, so these metrics are retained rather
+than dropped. The extra label creates one label value per original metric name;
+consider using this rule temporarily when the input has high cardinality.
+
+To explicitly drop everything not selected by earlier mappings, use a final
+drop rule instead:
+
+```yaml
+mappings:
+# Add specific glob and regex mappings above this rule.
+- match: '.+'
+  match_type: regex
+  action: drop
+  name: dropped
+```
+
+Explicitly dropped metrics also increment `graphite_dropped_samples_total`.
 
 ### Conversion from legacy configuration
 

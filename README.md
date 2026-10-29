@@ -164,7 +164,7 @@ To merge the data into an existing Prometheus storage directory, start Prometheu
 
 ## Incompatibility with Graphite bridge
 
-This exporter does not work in combination with the [Java client](https://prometheus.github.io/client_java/io/prometheus/client/bridge/Graphite.html) or [Python client](https://github.com/prometheus/client_python#graphite) Graphite bridge.
+This exporter does not work in combination with the [Java client](https://github.com/prometheus/client_java/blob/simpleclient/simpleclient_graphite_bridge/src/main/java/io/prometheus/client/bridge/Graphite.java) or [Python client](https://prometheus.github.io/client_python/bridges/graphite/) Graphite bridge.
 In the transition to the Graphite data model and back, information is lost.
 Additionally, default metrics conflict between the client libraries and the exporter.
 

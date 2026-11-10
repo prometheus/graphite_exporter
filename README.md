@@ -33,6 +33,29 @@ Metrics will be available on [http://localhost:9108/metrics](http://localhost:91
 To avoid using unbounded memory, metrics will be garbage collected five minutes after
 they are last pushed to. This is configurable with the `--graphite.sample-expiry` flag.
 
+### Sending metrics
+
+graphite_exporter does not pull from carbon-cache. Something must send Graphite
+plaintext to TCP or UDP port 9109.
+
+Options:
+
+* Instrument the application to send Graphite plaintext itself.
+* Use [carbon-relay](https://graphite.readthedocs.io/en/latest/carbon-daemons.html) (or a similar relay) to duplicate existing Graphite traffic.
+
+For the best results, run graphite_exporter and, if needed, carbon-relay as
+sidecars local to each application instance (host, VM, or pod). The application
+sends to the local relay; the relay forwards to both existing Graphite and
+graphite_exporter; Prometheus scrapes the exporter. That layout keeps metrics
+per instance and avoids mixing inconsistent label sets from many hosts into one
+exporter.
+
+```
+  app  -->  carbon-relay  -->  Graphite
+                 |
+                 +-->  graphite_exporter  <-- scrape --  Prometheus
+```
+
 ## Graphite Tags
 
 The graphite_exporter accepts metrics in the [tagged carbon format](https://graphite.readthedocs.io/en/latest/tags.html). In the case where there are valid and invalid tags supplied in one metric, the invalid tags will be dropped and the `graphite_tag_parse_failures` counter will be incremented. The exporter accepts inconsistent label sets, but this may cause issues querying the data in Prometheus.

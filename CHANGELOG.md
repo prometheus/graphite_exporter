@@ -1,5 +1,7 @@
 ## Unreleased
 
+* [BUGFIX] Apply `honor_labels` from the mapping configuration so tag labels win over mapping labels when it is set #381
+
 ## 0.17.0 / 2026-07-08
 
 * [FEATURE] Add metric and debug log for dropped samples #301

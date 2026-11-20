@@ -254,3 +254,49 @@ func TestProcessLine(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessLineHonorLabels(t *testing.T) {
+	config := `
+mappings:
+- match: "app.*.requests"
+  name: "app_requests"
+  labels:
+    env: "default"
+    job: "${1}"
+- match: "tool.*.requests"
+  name: "tool_requests"
+  honor_labels: true
+  labels:
+    env: "default"
+    job: "${1}"
+`
+	m := &mapper.MetricMapper{}
+	if err := m.InitFromYAMLString(config); err != nil {
+		t.Fatal(err)
+	}
+
+	c := NewGraphiteCollector(promslog.NewNopLogger(), false, 5*time.Minute)
+	c.SetMapper(m)
+
+	lines := []string{
+		"app.web.requests;env=prod 1 1534620625",
+		"tool.web.requests;env=prod 2 1534620625",
+		"tool.api.requests 3 1534620625",
+	}
+	for _, line := range lines {
+		c.processLine(line)
+	}
+	c.sampleCh <- nil
+
+	expected := map[string]prometheus.Labels{
+		"app.web.requests;env=prod":  {"env": "default", "job": "web"},
+		"tool.web.requests;env=prod": {"env": "prod", "job": "web"},
+		"tool.api.requests":          {"env": "default", "job": "api"},
+	}
+	for name, labels := range expected {
+		sample := c.samples[name]
+		if assert.NotNil(t, sample, "Missing %s", name) {
+			assert.Equal(t, labels, sample.Labels, name)
+		}
+	}
+}

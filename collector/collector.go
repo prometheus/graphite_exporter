@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"maps"
 	"math"
 	"regexp"
 	"strconv"
@@ -150,8 +149,14 @@ func (c *GraphiteCollector) processLine(line string) {
 
 	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
 
-	// add mapping labels to parsed labels
-	maps.Copy(labels, mappingLabels)
+	// Add mapping labels to the labels parsed from the tags. The mapping wins
+	// unless honor_labels is set, in which case it only supplies defaults.
+	for k, v := range mappingLabels {
+		if _, ok := labels[k]; ok && mappingPresent && mapping.HonorLabels {
+			continue
+		}
+		labels[k] = v
+	}
 
 	if (mappingPresent && mapping.Action == mapper.ActionTypeDrop) || (!mappingPresent && c.strictMatch) {
 		c.logger.Debug("Dropped line", "line", line)

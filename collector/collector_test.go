@@ -14,11 +14,13 @@
 package collector
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/promslog"
 	"github.com/prometheus/statsd_exporter/pkg/mapper"
 	"github.com/stretchr/testify/assert"
@@ -241,7 +243,7 @@ func TestProcessLine(t *testing.T) {
 	for name, k := range testCases {
 		t.Run(name, func(t *testing.T) {
 			originalName, _, _ := strings.Cut(k.line, " ")
-			sample := c.samples[originalName]
+			sample := sampleByOriginalName(c.samples, originalName)
 			if k.willFail {
 				assert.Nil(t, sample, "Found %s", k.name)
 			} else {
@@ -253,4 +255,103 @@ func TestProcessLine(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCollectCollidingGraphiteNames(t *testing.T) {
+	now := time.Now().Unix()
+	for name, tc := range map[string]struct {
+		firstLine  string
+		secondLine string
+		wantValue  float64
+	}{
+		"later timestamp wins": {
+			firstLine:  fmt.Sprintf("graphite.name.one 1 %d", now-1),
+			secondLine: fmt.Sprintf("graphite.name.two 2 %d", now),
+			wantValue:  2,
+		},
+		"later timestamp wins when it arrives first": {
+			firstLine:  fmt.Sprintf("graphite.name.one 2 %d", now),
+			secondLine: fmt.Sprintf("graphite.name.two 1 %d", now-1),
+			wantValue:  2,
+		},
+		"equal timestamps keep the incoming sample": {
+			firstLine:  fmt.Sprintf("graphite.name.one 1 %d", now),
+			secondLine: fmt.Sprintf("graphite.name.two 2 %d", now),
+			wantValue:  2,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := NewGraphiteCollector(promslog.NewNopLogger(), false, 5*time.Minute)
+			c.mapper = &mockMapper{
+				name: "colliding_metric",
+				labels: prometheus.Labels{
+					"foo": "bar",
+				},
+				present: true,
+			}
+
+			c.processLine(tc.firstLine)
+			c.processLine(tc.secondLine)
+			c.sampleCh <- nil
+
+			assert.Len(t, c.samples, 1)
+
+			family := gatherMetricFamily(t, c, "colliding_metric")
+			if assert.NotNil(t, family) {
+				assert.Len(t, family.Metric, 1)
+				assert.Equal(t, tc.wantValue, family.Metric[0].GetGauge().GetValue())
+			}
+		})
+	}
+}
+
+func TestCollectDistinctIdentities(t *testing.T) {
+	now := time.Now().Unix()
+	c := NewGraphiteCollector(promslog.NewNopLogger(), false, 5*time.Minute)
+	c.mapper = &mockMapper{present: false}
+
+	c.processLine(fmt.Sprintf("metric.one;env=prod 1 %d", now))
+	c.processLine(fmt.Sprintf("metric.two;env=dev 2 %d", now))
+	c.sampleCh <- nil
+
+	assert.Len(t, c.samples, 2)
+
+	families := gatherMetricFamilies(t, c)
+	one := families["metric_one"]
+	two := families["metric_two"]
+	if assert.NotNil(t, one) {
+		assert.Len(t, one.Metric, 1)
+		assert.Equal(t, 1.0, one.Metric[0].GetGauge().GetValue())
+	}
+	if assert.NotNil(t, two) {
+		assert.Len(t, two.Metric, 1)
+		assert.Equal(t, 2.0, two.Metric[0].GetGauge().GetValue())
+	}
+}
+
+func sampleByOriginalName(samples map[string]*graphiteSample, originalName string) *graphiteSample {
+	for _, sample := range samples {
+		if sample.OriginalName == originalName {
+			return sample
+		}
+	}
+	return nil
+}
+
+func gatherMetricFamily(t *testing.T, c *GraphiteCollector, name string) *dto.MetricFamily {
+	t.Helper()
+	return gatherMetricFamilies(t, c)[name]
+}
+
+func gatherMetricFamilies(t *testing.T, c *GraphiteCollector) map[string]*dto.MetricFamily {
+	t.Helper()
+	reg := prometheus.NewRegistry()
+	assert.NoError(t, reg.Register(c))
+	families, err := reg.Gather()
+	assert.NoError(t, err)
+	out := make(map[string]*dto.MetricFamily, len(families))
+	for _, family := range families {
+		out[family.GetName()] = family
+	}
+	return out
 }

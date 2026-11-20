@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/common v0.72.1
 	github.com/prometheus/exporter-toolkit v0.20.0
-	github.com/prometheus/prometheus v0.315.0
+	github.com/prometheus/prometheus v0.315.1
 	github.com/prometheus/statsd_exporter v0.31.0
 	github.com/stretchr/testify v1.12.1
 )

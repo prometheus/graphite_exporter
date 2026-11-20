@@ -146,6 +146,7 @@ func (c *GraphiteCollector) processLine(line string) {
 	parsedName, labels, err := c.parseMetricNameAndTags(originalName)
 	if err != nil {
 		c.logger.Debug("Invalid tags", "line", line, "err", err.Error())
+		return
 	}
 
 	mapping, mappingLabels, mappingPresent := c.mapper.GetMapping(parsedName, mapper.MetricTypeGauge)
